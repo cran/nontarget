@@ -1,0 +1,7 @@
+nontarget News
+
+CHANGES in version 1.3:
+
+	(1) src, R, man - several bugs debugged
+	(2) R - pattern.search2 introduced
+	(3) R - homol.search upgraded

@@ -14,7 +14,13 @@ plotgroup <-function(pattern,adduct=FALSE,groupID,massrange=10,allmass=TRUE){
   # retrieve group data set! ###################################################
   dat1<-pattern[[1]][as.numeric(strsplit(as.character(pattern[[3]][grepl(paste("/",groupID,"/",sep=""),as.character(pattern[[3]][,1]),fixed=TRUE),2]),",")[[1]]),]
   dat1<-dat1[order(dat1[,1],decreasing=FALSE),];
-  charge<-as.numeric(strsplit(as.character(pattern[[3]][grepl(paste("/",groupID,"/",sep=""),as.character(pattern[[3]][,1]),fixed=TRUE),3]),"/")[[1]]);                              # charge level
+  charge<-as.numeric(
+	strsplit(
+		as.character(pattern[[3]][
+			grepl(paste("/",groupID,"/",sep=""),as.character(pattern[[3]][,1]),fixed=TRUE)
+		,3])
+	,"/")[[1]]
+  );                              # charge level
   # find all peaks within parameter ranges + plot:
   screen(1); ###################################################################
   par(mar=c(1,4,2,2));

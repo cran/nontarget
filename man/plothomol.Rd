@@ -37,21 +37,24 @@ Martin Loos
 \examples{
 \donttest{
 data(peaklist);
-data(iso_list)
+data(isotopes)
 homol<-homol.search(
-  peaklist,
-  iso_list,
-  minmz=6,
-  maxmz=60,
-  minrt=0.5,
-  maxrt=1.8,
-  ppm=TRUE,
-  mztol=3.5,
-  rttol=0.4,
-  minlen=5,
-  plotit=TRUE,
-  restr=FALSE
-);
+		peaklist,
+		isotopes,
+		elements=c("C","H","O"),
+		charge=c(1,2),
+		use_C=TRUE,
+		minmz=5,
+		maxmz=60,
+		minrt=0.5,
+		maxrt=2,
+		ppm=TRUE,
+		mztol=3.5,
+        rttol=0.5,
+		minlength=4,
+		mzfilter=FALSE,
+		vec_size=1E6
+)
 plothomol(homol,xlim=FALSE,ylim=FALSE,plotlegend=FALSE);
 }
 }

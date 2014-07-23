@@ -39,11 +39,11 @@ peaklist<-rm.sat(peaklist,dmz=0.3,drt=0.1,intrat=0.015,spar=0.8,corcut=-1000,plo
 
 peaklist<-peaklist[peaklist[,4],1:3];
 
-data(iso_list);
+data(isotopes);
 
-iso<-make.isos(iso_list,charges=c(1),
-	elements=c("C","Cl","Br","N","S","K"),
-	rm.isotopes=c("33S","36S","40K"),rm.charges=c(1,1,1));
+iso<-make.isos(isotopes,
+	use_isotopes=c("13C","15N","34S","37Cl","81Br","41K","13C","15N","34S","37Cl","81Br","41K"),
+	use_charges=c(1,1,1,1,1,1,2,2,2,2,2,2))
 	
 pattern<-pattern.search(
   peaklist,

@@ -97,6 +97,7 @@ Martin Loos
 
 \seealso{
 	\code{\link[nontarget]{pattern.search}}
+	\code{\link[nontarget]{pattern.search2}}
 	\code{\link[nontarget]{adduct.search}}	
 	\code{\link[nontarget]{homol.search}}
 	\code{\link[nontarget]{plotisotopes}}	

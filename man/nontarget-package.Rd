@@ -14,9 +14,9 @@ Includes various plotting and filtering functions for e.g. mass defects, frequen
 \tabular{ll}{
 Package: \tab nontarget\cr
 Type: \tab Package\cr
-Version: \tab 1.2\cr
-Date: \tab 2012-10-15\cr
-License: \tab GPL-2\cr
+Version: \tab 1.3\cr
+Date: \tab 2014-07-22\cr
+License: \tab GPL-3\cr
 }
 Screens a HRMS data set for peaks related by (1) isotopic patterns and/or (2) different adducts of the same molecule and/or (3) being part of 
 a homologue series, including various plausibility checks. The resulting isotopic pattern groups and adduct groups can then be combined to components,
@@ -29,22 +29,19 @@ Allows filtering HRMS data for mass defects, satellite peaks, frequent m/z dista
 Lists of most-common adducts and isotopes are provided or may be user-defined.
 
 
-Requires HRMS peak lists as input, i.e., a dataframe or list with values of (a) m/z, (b) intensity and (c) retention time (RT) per peak.
+Requires HRMS centroid peak lists as input, i.e., a dataframe or matrix with values of (a) m/z, (b) intensity and (c) retention time (RT) per peak.
 In addition, tolerances for m/z, RT and uncertainties in peak intensity must be defined by the user.
 }
-
-\references{
-Loos, M., Hollender, J., Schymanski, E., Ruff, M., Singer, H., 2012.
-Bottom-up peak grouping for unknown identification from high-resolution mass spectrometry data.
-ASMS 2012 annual conference Vancouver, oral session Informatics: Identification.
-}
-
-
 \author{
 Martin Loos
 
 Maintainer: Martin Loos <Martin.Loos@eawag.ch>
 
+}
+\references{
+Loos, M., Hollender, J., Schymanski, E., Ruff, M., Singer, H., 2012.
+Bottom-up peak grouping for unknown identification from high-resolution mass spectrometry data.
+ASMS 2012 annual conference Vancouver, oral session Informatics: Identification.
 }
 
 \keyword{ package }
@@ -52,23 +49,22 @@ Maintainer: Martin Loos <Martin.Loos@eawag.ch>
 \seealso{
 	
 	Detecting isotope pattern groups:
-	\code{\link[nontarget]{iso_list}}
 	\code{\link[nontarget]{peaklist}}
 	\code{\link[nontarget]{make.isos}}
 	\code{\link[nontarget]{pattern.search}}
+	\code{\link[nontarget]{pattern.search2}}
 	\code{\link[nontarget]{plotisotopes}}	
 	\code{\link[nontarget]{plotdefect}}
-
+	\code{\link[enviPat]{isotopes}}
+	\code{\link[enviPat]{resolution_list}}
 	
 	Detecting adduct groups:
-	\code{\link[nontarget]{adduct_list}}
 	\code{\link[nontarget]{peaklist}}
 	\code{\link[nontarget]{adduct.search}}	
 	\code{\link[nontarget]{plotadduct}}	
-	
+	\code{\link[enviPat]{adducts}}
 	
 	Detecting homologue series:
-	\code{\link[nontarget]{iso_list}}
 	\code{\link[nontarget]{peaklist}}	
 	\code{\link[nontarget]{homol.search}}
 	\code{\link[nontarget]{plothomol}}
@@ -100,16 +96,16 @@ Maintainer: Martin Loos <Martin.Loos@eawag.ch>
 data(peaklist);
 peaklist<-rm.sat(peaklist,dmz=0.3,drt=0.1,intrat=0.015,spar=0.8,corcut=-1000,plotit=TRUE);
 peaklist<-peaklist[peaklist[,4],1:3];
-# (0.2) list of adducts ##############################
-data(adduct_list);
-# (0.3) list of isotopes #############################
-data(iso_list);
+# (0.2) list of adducts - package enviPat ############
+data(adducts);
+# (0.3) list of isotopes - package enviPat ###########
+data(isotopes);
 ######################################################
 # (1) run isotope pattern grouping ###################
 # (1.1) define isotopes and charge argument ##########
-iso<-make.isos(iso_list,charges=c(1),
-	elements=c("C","Cl","Br","N","S","K"),
-	rm.isotopes=c("33S","36S","40K"),rm.charges=c(1,1,1));
+iso<-make.isos(isotopes,
+	use_isotopes=c("13C","15N","34S","37Cl","81Br","41K","13C","15N","34S","37Cl","81Br","41K"),
+	use_charges=c(1,1,1,1,1,1,2,2,2,2,2,2))
 # (1.2) run isotope grouping #########################
 pattern<-pattern.search(
   peaklist,
@@ -132,7 +128,7 @@ plotdefect(pattern,elements=c("N"));
 # of the same candidate molecule #####################
 adduct<-adduct.search(
   peaklist,
-  adduct_list,
+  adducts,
   rttol=0.05,
   mztol=3,
   massfrac=0.1,
@@ -151,19 +147,22 @@ plotgroup(pattern,adduct,groupID=1,massrange=10,allmass=FALSE);
 ######################################################
 # (4.1) Screen for homologue series ##################
 homol<-homol.search(
-  peaklist,
-  iso_list,
-  minmz=6,
-  maxmz=60,
-  minrt=0.5,
-  maxrt=1.8,
-  ppm=TRUE,
-  mztol=3.5,
-  rttol=0.4,
-  minlen=4,
-  plotit=TRUE,
-  restr=FALSE
-);
+		peaklist,
+		isotopes,
+		elements=c("C","H","O"),
+		charge=c(1,2),
+		use_C=TRUE,
+		minmz=5,
+		maxmz=60,
+		minrt=0.5,
+		maxrt=2,
+		ppm=TRUE,
+		mztol=3.5,
+        rttol=0.5,
+		minlength=4,
+		mzfilter=FALSE,
+		vec_size=1E6
+)
 # (4.2) Plot results #################################
 plothomol(homol,xlim=FALSE,ylim=FALSE,plotlegend=TRUE);
 ######################################################

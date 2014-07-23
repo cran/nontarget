@@ -1,22 +1,30 @@
 pattern.search <-
-function(peaklist,iso,cutint=min(peaklist[,2]),rttol=c(-0.5,0.5),mztol=3,mzfrac=0.1,
-                      ppm=TRUE,inttol=0.5,rules=c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE),
-                      deter=FALSE,entry=20){
+function(
+		peaklist,
+		iso,
+		cutint=min(peaklist[,2]),
+		rttol=c(-0.5,0.5),
+		mztol=3,
+		mzfrac=0.1,
+        ppm=TRUE,
+		inttol=0.5,
+		rules=c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE),
+        deter=FALSE,
+		entry=20
+	){
 
     ############################################################################
-    # (0) check inputs
-    #minpeaks=FALSE;
+    # (0) check inputs #########################################################
     if(mzfrac>1 || mzfrac<=0){ stop("mzfrac must be >0 and <=1") };
     if(mztol<=0){warning("mztol should be >0!")};
     if(inttol>1 || inttol<0){ stop("inttol must be >0 and <=1") };
     if(length(rttol)!=2){stop("rttol must have a lower and an upper bound!")};
     if(rttol[1]>rttol[2]){stop("minimum > maximum for rttol!")};
-    #if(minpeaks!=FALSE){if(minpeaks<1){stop("wrong setting for minpeaks")}};
     if(length(rules)<11){stop("wrong parameter setting: number of rules < 8!")}
     if(length(peaklist)>3){stop("peaklist with > 3 columns not allowed")}
     if(rules[4]==TRUE & any(iso$elements=="C")==FALSE){stop("How is rule #7 supposed to work if carbon is not part of the iso argument? Include carbon or set rules[7] to FALSE.")}
-    ############################################################################
-    cat("\n (1) Assemble lists ...");
+	############################################################################
+    cat("\n (1) Assemble lists ... ");
     # (1) define parameters / lists / matrices / ... ###########################
     # (1.1) sort peaklist
     getback<-order(peaklist[,3],peaklist[,1],decreasing=FALSE);
@@ -30,11 +38,11 @@ function(peaklist,iso,cutint=min(peaklist[,2]),rttol=c(-0.5,0.5),mztol=3,mzfrac=
     if(deter==FALSE){
       for(i in 1:length(elements)){
         if(any(iso[[1]][,1]==elements[i])!=TRUE){
-          stop(paste("Element ",elements[i]," not in iso_list!",sep=""))
+          stop(paste("Element ",elements[i]," not found in iso[[5]]!",sep=""))
         };
       };
     }else{
-      rules=c(FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE);
+      rules=c(FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE);
     };
     # (1.2) objects required for the screening step ...
     # (1.2.1) ... 1: find mass increments
@@ -71,7 +79,7 @@ function(peaklist,iso,cutint=min(peaklist[,2]),rttol=c(-0.5,0.5),mztol=3,mzfrac=
     ############################################################################
 
     ############################################################################
-    cat("\n (2) Screen for mass increments...");
+    cat("\n (2) Screen for mass increments ... ");
     # (2) screen for isotope dmass #############################################
     #dyn.load(paste(.libPaths(),"/nontarget/temp/massCpp.dll",sep=""));
     if(ppm==TRUE){ppm2=1}else{ppm2=2};
@@ -115,7 +123,7 @@ function(peaklist,iso,cutint=min(peaklist[,2]),rttol=c(-0.5,0.5),mztol=3,mzfrac=
 
     ############################################################################
     if(deter==FALSE){
-    cat("\n (3) Check plausibility ...");
+    cat("\n (3) Check plausibility ... ");
     # (3) remove invalid dmass-links based on rules (1) to (3) #################
     for(i in 1:length(getit4)){
     if(getit4[i]!="0"){ # anything to check?
@@ -921,7 +929,7 @@ function(peaklist,iso,cutint=min(peaklist[,2]),rttol=c(-0.5,0.5),mztol=3,mzfrac=
     ############################################################################
 
     ############################################################################
-    cat("\n (5) Create output...");
+    cat("\n (5) Create output... ");
     ############################################################################
     overlap<-rep(0,100);
     for(i in 1:alls){
@@ -952,7 +960,7 @@ function(peaklist,iso,cutint=min(peaklist[,2]),rttol=c(-0.5,0.5),mztol=3,mzfrac=
     }
     ############################################################################
     hits<-data.frame(isomat[,c(1,7,4)],rep(0,length(isomat[,1])),rep("0",length(isomat[,1])));
-    names(hits)<-c("isotope","charge","mass increment counts","group counts","element");
+    names(hits)<-c("isotope","charge","peak counts","group counts","element");
     # increment counts
     for(j in 1:length(getit1)){
       if(getit1[j]!="none"){

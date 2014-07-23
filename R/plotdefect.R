@@ -26,23 +26,25 @@ function(pattern,elements=c("Br")){
     ############################################################################
     # add points to plot #######################################################
     if(elements[1]!=FALSE){
-    these<-c()
-    for(i in 1:length(elements)){these<-c(these,pattern[[9]][,1][pattern[[9]][,5]==elements[i]]);}
-    for(i in 1:length(pattern[[3]][,1])){
-        that<-as.numeric(strsplit(as.character(pattern[[3]][i,2]),",")[[1]]);
-        for(j in 1:length(that)){
-          this<-strsplit(as.character(pattern[[1]][that[j],8]),"/")[[1]];
-          if(this[1]!="none"){
-            for(n in 1:length(this)){
-              if(any(as.character(this[n])==as.character(these))){
-                  points(pattern[[1]][that[j],1],dmz[that[j]],pch=19,col="red",cex=0.5)
-              }
-            }
-          }
-        }
+		these<-c()
+		for(i in 1:length(elements)){
+			these<-c(these,as.character(pattern[[9]][,1][as.character(pattern[[9]][,5])==elements[i]]));
+		}
+		these<-unique(these)
+		for(i in 1:length(pattern[[3]][,1])){
+			that<-as.numeric(strsplit(as.character(pattern[[3]][i,2]),",")[[1]]);
+			for(j in 1:length(that)){
+			  this<-strsplit(as.character(pattern[[1]][that[j],8]),"/")[[1]];
+			  if(this[1]!="none"){
+				for(n in 1:length(this)){
+				  if(any(as.character(this[n])==as.character(these))){
+					  points(pattern[[1]][that[j],1],dmz[that[j]],pch=19,col="red",cex=0.5)
+				  }
+				}
+			  }
+			}
+		}
     }
-    }
-    
     ############################################################################
 
 }

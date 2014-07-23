@@ -1,11 +1,10 @@
-plothomol <-
+plothomol<-
 function(homol,xlim=FALSE,ylim=FALSE,plotlegend=TRUE){
 
     ############################################################################
     # check inputs #############################################################
     if(xlim[1]!=FALSE){if(length(xlim)>2){stop("xlim not correct!")}}
     if(ylim[1]!=FALSE){if(length(xlim)>2){stop("xlim not correct!")}}
-    if(names(homol[[2]][8])!="minlen"){stop("invalid homol argument")}
     if(length(homol[[5]])<1){stop("no homologue series found!")}
     ############################################################################
     

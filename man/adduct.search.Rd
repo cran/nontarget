@@ -7,16 +7,17 @@ Detecting and grouping adduct m/z relations among peaks in a HRMS dataset
 Algorithm for detecting m/z differences among peaks that may correspond to m/z differences among different adducts.
 }
 \usage{
-adduct.search(peaklist, adduct_list, rttol = 0, mztol = 2, massfrac = 0.1, ppm = TRUE, 
-adducts = c("M+H", "M+K", "M+Na"), ion_mode = "positive", entry = 20)
+adduct.search(peaklist, adducts, rttol = 0, mztol = 2, massfrac = 0.1, ppm = TRUE, 
+use_adducts = c("M+H", "M+K", "M+Na"), ion_mode = "positive", entry = 20)
 }
+
 
 \arguments{
   \item{peaklist}{
-	List of HRMS peaks with three entries for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}.
+	Dataframe or matrix of HRMS peaks with three columns for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}.
 }
-  \item{adduct_list}{
-	Data.frame \code{\link[nontarget]{adduct_list}} or equivalent.
+  \item{adducts}{
+	Data.frame \code{\link[enviPat]{adducts}} or equivalent.
 }
   \item{rttol}{
 	Retention time tolerance. Units as given in column 3 of peaklist argument, e.g. [min].
@@ -31,8 +32,8 @@ adducts = c("M+H", "M+K", "M+Na"), ion_mode = "positive", entry = 20)
   \item{ppm}{
 	Should \code{mztol} be set in ppm (TRUE) or in absolute m/z (FALSE)
 }
-  \item{adducts}{
-	Vector of adducts to be screened for. Corresponds to names in the first column of \code{\link[nontarget]{adduct_list}}, thus referring to equations from the second column of \code{\link[nontarget]{adduct_list}}
+  \item{use_adducts}{
+	Vector of adducts to be screened for. Corresponds to names in the first column of \code{\link[enviPat]{adducts}}, thus referring to equations from the second column of \code{\link[enviPat]{adducts}}
 	to be used for calculating adduct m/z differences.
 }
   \item{ion_mode}{
@@ -69,18 +70,13 @@ relations (\code{to ID},\code{adduct(s)},\code{mass tolerance},\code{charge leve
 \author{
 Martin Loos
 }
-\references{
-Loos, M., Hollender, J., Schymanski, E., Ruff, M., Singer, H., 2012.
-Bottom-up peak grouping for unknown identification from high-resolution mass spectrometry data.
-ASMS 2012 annual conference Vancouver, oral session Informatics: Identification.
-}
 \note{
 Input peaklist is internally sorted and saved in the lists returned by (a) increasing retention time and (b) m/z by all \code{\link[nontarget]{pattern.search}}, \code{\link[nontarget]{adduct.search}} 
 and \code{\link[nontarget]{homol.search}}. Peak IDs refer to this very order - in contrast to group IDs. Different group IDs exist for adduct groups, isotope pattern groups and homologue series peak 
 groups. Moreover, and at the highest level, yet other IDs exist for the individual components (see note section of \code{\link[nontarget]{combine}}).
 
 Adduct groups may overlap, indicating a conflict in assigning adducts correctly.
-Beware, some different adduct equation combinations in column two of \code{\link[nontarget]{adduct_list}} may lead to the same results
+Beware, some different adduct equation combinations in column two of \code{\link[enviPat]{adducts}} may lead to the same results
 (e.g. M+H<->M+Na vs M+3H<->M+3Na).
 
 Group IDs are valid both for adduct[[1]] and adduct[[3]].
@@ -88,7 +84,7 @@ Group IDs are valid both for adduct[[1]] and adduct[[3]].
 
 \seealso{
 	\code{\link[nontarget]{rm.sat}}
-	\code{\link[nontarget]{adduct_list}}
+	\code{\link[enviPat]{adducts}}
 	\code{\link[nontarget]{peaklist}}
 	\code{\link[nontarget]{plotadduct}}	
 	\code{\link[nontarget]{combine}}
@@ -101,18 +97,18 @@ Group IDs are valid both for adduct[[1]] and adduct[[3]].
 # HRMS peak list: ####################################
 data(peaklist)
 # list of adducts ####################################
-data(adduct_list) 
+data(adducts) 
 ######################################################
 # run grouping of peaks for different adducts ########
 # of the same candidate molecule #####################
 adduct<-adduct.search(
   peaklist,
-  adduct_list,
+  adducts,
   rttol=0.05,
   mztol=3,
   massfrac=0.1,
   ppm=TRUE,
-  adducts=c("M+K","M+H","M+Na","M+NH4"),
+  use_adducts=c("M+K","M+H","M+Na","M+NH4"),
   ion_mode="positive",
   entry=50
 );

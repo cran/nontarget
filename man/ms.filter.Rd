@@ -8,8 +8,9 @@ Flexible interactive filtering of components and/or peaks via polygon selection.
 Mark peaks and components in plots of retention time, m/z, mass defect or peak intensity. Select components or peaks by drawing a polygon.  
 }
 \usage{
-ms.filter(component, x = "mz", y = "dm", xlim = FALSE, ylim = FALSE, rm.comp = FALSE, 
-plot.comp = TRUE, rm.noncomp = TRUE, select.polygon = "inside", res = 100, 
+ms.filter(component, x = "mz", y = "dm", xlim = FALSE, 
+ylim = FALSE, rm.comp = FALSE, plot.comp = TRUE, 
+rm.noncomp = TRUE, select.polygon = "inside", res = 100, 
 filter.for = "raw")
 }
 

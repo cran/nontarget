@@ -1,17 +1,22 @@
 adduct.search <-
 function(
-                    peaklist,adduct_list,
-                    rttol=0,mztol=2,massfrac=0.1,ppm=TRUE,
-                    adducts=c("M+H","M+K","M+Na"),ion_mode="positive",
+                    peaklist,
+					adducts,
+                    rttol=0,
+					mztol=2,
+					massfrac=0.1,
+					ppm=TRUE,
+                    use_adducts=c("M+H","M+K","M+Na"),
+					ion_mode="positive",
                     entry=20
-                    ){
+        ){
 
     ############################################################################
     # (0) check inputs #########################################################
-    if(massfrac>1 || massfrac<=0){ stop("massfrac must be >0 and <=1") };
+    if( massfrac>1 || massfrac<=0 ){ stop("massfrac must be >0 and <=1") };
     if(ion_mode!="positive" & ion_mode!="negative"){stop("ion mode: positive or negative?")}
-    for(i in 1:length(adducts)){if(any(adduct_list[,1]==adducts[i])!=TRUE &  any(adduct_list[adduct_list[,1]==adducts[i],6]==ion_mode)){stop(paste("Adduct ",adducts[i]," not in adduct_list!",sep=""))}};
-    for(i in 1:length(adducts)){if((adduct_list[adduct_list[,1]==adducts[i],6]!=ion_mode)){stop(paste(adducts[i]," not in ion mode ",ion_mode,sep=""))}};
+    for(i in 1:length(use_adducts)){if(any(adducts[,1]==use_adducts[i])!=TRUE &  any(adducts[adducts[,1]==use_adducts[i],6]==ion_mode)){stop(paste("Adduct ",use_adducts[i]," not in adducts!",sep=""))}};
+    for(i in 1:length(use_adducts)){if((adducts[adducts[,1]==use_adducts[i],6]!=ion_mode)){stop(paste(use_adducts[i]," not in ion mode ",ion_mode,sep=""))}};
     if(length(peaklist)>3){stop("peaklist with > 3 columns not allowed")}
     ############################################################################
     cat("\n (1) Assemble lists...");
@@ -25,29 +30,29 @@ function(
     getit2<-rep("0",alls);        # (2) from which peak?
     getit4<-rep("0",alls);        # (3) to which peak?
     getit5<-rep("0",alls);        # (4) within [1] large or [2] small mass tolerance?
-    # (1.3) retrieve selected subset of adduct_list
-    adducts<-as.character(levels(as.factor(adducts)))
-    these<-match(adducts,adduct_list[,1]);
+    # (1.3) retrieve selected subset of adducts
+    use_adducts<-as.character(levels(as.factor(use_adducts)))
+    these<-match(use_adducts,adducts[,1]);
     these<-these[is.na(these)==FALSE];
-    add<-adduct_list[these,];
+    add<-adducts[these,];
     add<-add[add[,6]==ion_mode,];
-    if(length(add[,1])<1){stop("No selected adducts in list!")};
+    if(length(add[,1])<1){stop("No selected use_adducts among adducts ... abort!")};
     add2<-data.frame(0,0,0,0,0);
     add3<-c();
     names(add2)<-c("mult1","mass1","mult2","mass2","count")
     that<-c(2);
     for(i in 1:(length(add[,1]))){
-      for(j in 1:length(add[,1])){
-          if(i!=j){
-          add2<-rbind(add2,rep(0,5));
-          add2[that,1]<-add[i,4];
-          add2[that,2]<-add[i,5];
-          add2[that,3]<-add[j,4];
-          add2[that,4]<-add[j,5];
-          that<-c(that+1);
-          add3<-c(add3,paste(add[i,1],add[j,1],sep="<->"));
-          }
-       }; #j
+		for(j in 1:length(add[,1])){
+			if(i!=j){
+				add2<-rbind(add2,rep(0,5));
+				add2[that,1]<-add[i,4];
+				add2[that,2]<-add[i,5];
+				add2[that,3]<-add[j,4];
+				add2[that,4]<-add[j,5];
+				that<-c(that+1);
+				add3<-c(add3,paste(add[i,1],add[j,1],sep="<->"));
+			}
+		}; #j
     }; #i
     add2<-add2[-1,];
     #data.frame(add3,add2);
@@ -63,46 +68,83 @@ function(
     getit4a<-rep(0,alls*entry);
     getit5a<-rep(0,alls*entry);
     maxmass<-max(peaklist[,1]);
-    #dyn.load("C:\\Program Files\\R\\R-2.13.1\\bin\\i386\\adductCpp.dll");
-    #dyn.load(paste(.libPaths(),"/nontarget/temp/adductCpp.dll",sep=""));
     result<-.C("adduct",
-      as.double(samples[,1]),as.double(samples[,3]),as.integer(length(samples[,1])),  # 3
-      as.double(mztol*2),as.double(massfrac*2),as.double(rttol),    # 6
-      as.integer(length(add2[,1])),                                                               # 7
-      as.double(add2[,1]),as.double(add2[,2]),as.double(add2[,3]),as.double(add2[,4]),as.integer(add2[,5]),    # 12
-      as.integer(entry),as.integer(ppm2),                                       # 14
-      as.integer(getit1a),as.integer(getit2a),as.integer(getit4a),as.integer(getit5a) # 18
-      ,PACKAGE="nontarget"
+		as.double(samples[,1]),
+		as.double(samples[,3]),
+		as.integer(length(samples[,1])),  	# 3
+		as.double(mztol*2),
+		as.double(massfrac*2),
+		as.double(rttol),    				# 6
+		as.integer(length(add2[,1])),       # 7
+		as.double(add2[,1]),
+		as.double(add2[,2]),
+		as.double(add2[,3]),
+		as.double(add2[,4]),
+		as.integer(add2[,5]),    			# 12
+		as.integer(entry),
+		as.integer(ppm2),                   # 14
+		as.integer(getit1a),
+		as.integer(getit2a),
+		as.integer(getit4a),
+		as.integer(getit5a), 				# 18
+		PACKAGE="nontarget"
     );
     # (1) which adduct?
-    for(i in 1:(alls-1)){for(j in 1:entry){if(result[15][[1]][(i-1)*entry+j]!=0){getit1[i]<-paste(getit1[i],result[15][[1]][(i-1)*entry+j],sep="/")}}};
+    for(i in 1:(alls-1)){
+		for(j in 1:entry){
+			if(result[15][[1]][(i-1)*entry+j]!=0){
+				getit1[i]<-paste(getit1[i],result[15][[1]][(i-1)*entry+j],sep="/")
+			}
+		}
+	};
     # (2) from which peak?
-    for(i in 1:(alls-1)){for(j in 1:entry){if(result[16][[1]][(i-1)*entry+j]!=0){getit2[i]<-paste(getit2[i],result[16][[1]][(i-1)*entry+j],sep="/")}}};
+    for(i in 1:(alls-1)){
+		for(j in 1:entry){
+			if(result[16][[1]][(i-1)*entry+j]!=0){
+				getit2[i]<-paste(getit2[i],getback[result[16][[1]][(i-1)*entry+j]],sep="/")
+			}
+		}
+	};
     # (3) to which peak?
-    for(i in 1:(alls-1)){for(j in 1:entry){if(result[17][[1]][(i-1)*entry+j]!=0){getit4[i]<-paste(getit4[i],result[17][[1]][(i-1)*entry+j],sep="/")}}};
+    for(i in 1:(alls-1)){
+		for(j in 1:entry){
+			if(result[17][[1]][(i-1)*entry+j]!=0){
+				getit4[i]<-paste(getit4[i],getback[result[17][[1]][(i-1)*entry+j]],sep="/")
+			}
+		}
+	};
     # (4) tolerance: small or large?
-    for(i in 1:(alls-1)){for(j in 1:entry){
-      if(result[18][[1]][(i-1)*entry+j]==1){getit5[i]<-paste(getit5[i],"small",sep="/")};
-      if(result[18][[1]][(i-1)*entry+j]==2){getit5[i]<-paste(getit5[i],"large",sep="/")};
-    }};
-    if(result[13][[1]]!=entry){cat("WARNING: entry overflow -> links missing!")};
+    for(i in 1:(alls-1)){
+		for(j in 1:entry){
+			if(result[18][[1]][(i-1)*entry+j]==1){
+				getit5[i]<-paste(getit5[i],"small",sep="/")
+			};
+			if(result[18][[1]][(i-1)*entry+j]==2){
+				getit5[i]<-paste(getit5[i],"large",sep="/")
+			};
+		}
+	};
+    if(result[13][[1]]!=entry){
+		cat("WARNING: entry overflow -> links missing!")
+	};
     #data.frame(ID,getit4,getit2,getit1,getit5)
     rm(result);
-    #dyn.unload(paste(.libPaths(),"/nontarget/temp/adductCpp.dll",sep=""));
     ############################################################################
     
     ############################################################################
-    # correct outputs for missing adduct combis (only submatrix searched!)
+    # correct outputs for missing adduct combis (only submatrix searched!) #####
     for(i in 1:alls){
-      if(getit1[i]!="none"){
-        this12<-as.numeric(strsplit(as.character(getit1[i]),"/")[[1]][-1]);
-        if(length(this12)==1){
-          getit1[i]<-paste("none//",add3[this12],"//",sep="");
-        }else{
-          getit1[i]<-paste("none//",add3[this12[1]],"//",sep="");
-          for(j in 2:length(this12)){getit1[i]<-paste(getit1[i],add3[this12[j]],"//",sep="");}
-        };
-      };
+		if(getit1[i]!="none"){
+			this12<-as.numeric(strsplit(as.character(getit1[i]),"/")[[1]][-1]);
+			if(length(this12)==1){
+				getit1[i]<-paste("none//",add3[this12],"//",sep="");
+			}else{
+				getit1[i]<-paste("none//",add3[this12[1]],"//",sep="");
+				for(j in 2:length(this12)){
+					getit1[i]<-paste(getit1[i],add3[this12[j]],"//",sep="");
+				}
+			};
+		};
     };
     for(i in 1:alls){
       if(getit4[i]!="0"){
@@ -116,20 +158,20 @@ function(
         for(j in 1:length(this2a)){
               this2<-c(this2,strsplit(as.character(this2a[j]),"<->")[[1]][1]);
               this3<-c(this3,strsplit(as.character(this2a[j]),"<->")[[1]][2]);
-              };
+        };
         for(j in 1:length(this1)){
-          this10<-strsplit(as.character(getit4[as.numeric(this1[j])]),"/")[[1]]
-          this11<-strsplit(as.character(getit1[as.numeric(this1[j])]),"//")[[1]]
-          if((any(this10==as.character(i)) & any(this11==paste(this3[j],"<->",this2[j],sep=""))) == FALSE ){
-               getit4[as.numeric(this1[j])]<-paste(getit4[as.numeric(this1[j])],i,sep="/");
-               if(getit1[as.numeric(this1[j])]=="none"){
-                getit1[as.numeric(this1[j])]="none//"
-                getit1[as.numeric(this1[j])]<-paste(getit1[as.numeric(this1[j])],paste(this3[j],"<->",this2[j],"//",sep=""),sep="");
-               }else{
-                getit1[as.numeric(this1[j])]<-paste(getit1[as.numeric(this1[j])],paste(this3[j],"<->",this2[j],"//",sep=""),sep="");
-               }
-               getit5[as.numeric(this1[j])]<-paste(getit5[as.numeric(this1[j])],this5[j],sep="/");
-          };
+			this10<-strsplit(as.character(getit4[as.numeric(this1[j])]),"/")[[1]]
+			this11<-strsplit(as.character(getit1[as.numeric(this1[j])]),"//")[[1]]
+			if((any(this10==as.character(i)) & any(this11==paste(this3[j],"<->",this2[j],sep=""))) == FALSE ){
+				getit4[as.numeric(this1[j])]<-paste(getit4[as.numeric(this1[j])],i,sep="/");
+				if(getit1[as.numeric(this1[j])]=="none"){
+					getit1[as.numeric(this1[j])]="none//"
+					getit1[as.numeric(this1[j])]<-paste(getit1[as.numeric(this1[j])],paste(this3[j],"<->",this2[j],"//",sep=""),sep="");
+				}else{
+					getit1[as.numeric(this1[j])]<-paste(getit1[as.numeric(this1[j])],paste(this3[j],"<->",this2[j],"//",sep=""),sep="");
+				}
+				getit5[as.numeric(this1[j])]<-paste(getit5[as.numeric(this1[j])],this5[j],sep="/");
+			};
         };
       };
     };
@@ -139,11 +181,11 @@ function(
 
     ############################################################################
     # (4) group ################################################################
-    cat("\n (3) Group peaks...");
+    cat("\n (3) Group peaks ...");
     ############################################################################
     group1<-c(); # groupnumber?
     group2<-c(); # which peaks?
-    group3<-c(); # which adducts?
+    group3<-c(); # which use_adducts?
     group4<-rep(0,alls); # groupnumber? 1-alls
     groupnumber<-c(1);
     getit1b<-getit1;
@@ -154,9 +196,9 @@ function(
         this2a<-strsplit(as.character(getit1b[i]),"//")[[1]][-1];
         this2<-c();this3<-c();
         for(j in 1:length(this2a)){
-              this2<-c(this2,strsplit(as.character(this2a[j]),"<->")[[1]][1]);
-              this3<-c(this3,strsplit(as.character(this2a[j]),"<->")[[1]][2]);
-              };
+            this2<-c(this2,strsplit(as.character(this2a[j]),"<->")[[1]][1]);
+            this3<-c(this3,strsplit(as.character(this2a[j]),"<->")[[1]][2]);
+        };
         this4<-levels(as.factor(this2));
         for(j in 1:length(this4)){
           # assemble group information  ########################################
@@ -227,7 +269,7 @@ function(
     };
     ############################################################################
     # count hits !
-    hits<-data.frame(adducts,rep(0,length(adducts)));
+    hits<-data.frame(use_adducts,rep(0,length(use_adducts)));
     names(hits)<-c("names","counts");
     for(i in 1:length(group1)){
       this1<-strsplit(as.character(group3[i]),"/")[[1]];
@@ -245,12 +287,12 @@ function(
         group1[k]<-paste("/",group1[k],"/",sep="")
     }
     grouping<-data.frame(group1,group2,group3);
-    names(grouping)<-c("group ID","peak IDs","adducts");
+    names(grouping)<-c("group ID","peak IDs","use_adducts");
     ############################################################################
-    adducts<-data.frame(samples[,1:3],ID,group4,getit4,getit1,getit5);
-    names(adducts)<-c(names(samples)[1:3],"peak ID","group ID","to ID","adduct(s)","mass tolerance");
-    adduct<-list(adducts,parameters,grouping,hits,overlaps);
-    names(adduct)<-c("Adducts","Parameters","Peaks in adduct groups","Number of adducts","Number of peaks with grouped adducts overlapping");
+    list_adducts<-data.frame(peaklist[,1:3],ID,group4,getit4,getit1,getit5);
+    names(list_adducts)<-c(names(peaklist)[1:3],"peak ID","group ID","to ID","adduct(s)","mass tolerance");
+    adduct<-list(list_adducts,parameters,grouping,hits,overlaps);
+    names(adduct)<-c("adducts","Parameters","Peaks in adduct groups","Adduct counts","Number of peaks with grouped adducts overlapping");
     cat("done.\n\n");
     ############################################################################
 

@@ -51,12 +51,12 @@ Martin Loos
 \donttest{
 #############################################################
 data(peaklist);
-data(adduct_list);
-data(iso_list);
+data(adducts);
+data(isotopes);
 # run isotope grouping ######################################
-iso<-make.isos(iso_list,charges=c(1),
-	elements=c("C","Cl","Br","N","S","K"),
-	rm.isotopes=c("33S","36S","40K"),rm.charges=c(1,1,1));
+iso<-make.isos(isotopes,
+	use_isotopes=c("13C","15N","34S","37Cl","81Br","41K","13C","15N","34S","37Cl","81Br","41K"),
+	use_charges=c(1,1,1,1,1,1,2,2,2,2,2,2))
 	
 pattern<-pattern.search(
   peaklist,
@@ -75,7 +75,7 @@ plotgroup(pattern,adduct=FALSE,groupID=3,massrange=10,allmass=FALSE)
 # run adduct grouping #######################################
 adduct<-adduct.search(
   peaklist,
-  adduct_list,
+  adducts,
   rttol=0.05,
   mztol=3,
   massfrac=0.1,
