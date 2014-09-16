@@ -13,7 +13,7 @@ using namespace std;
 struct dat{
        vector<double> mass;
        vector<double> retent;
-       bool operator() (int i,int j) { return (mass[i]<mass[j]);}
+       bool operator() (size_t i, size_t j) { return (mass[i]<mass[j]);}
        };
 
 extern "C"
@@ -24,7 +24,8 @@ void mass(             double *mass, double *retent, int *a, double *masstol, do
                        )
      {
 
-      int i = 0, j = 0, k, l, m, rtlow = 0, rtup = 0, howmany, upcount, lowcount, entry2=*entry;
+      size_t i=0,k=0,j=0,m=0,l=0,upcount=0,lowcount=0,rtup=0,rtlow=0,howmany=0;
+      int entry2=*entry;
       double uptol, lowtol, thismasslow, thismasslow2, thismassup, thismassup2;
       //generate index vectors:
       vector<int> index;
@@ -60,38 +61,40 @@ void mass(             double *mass, double *retent, int *a, double *masstol, do
       getit6b = INTEGER_POINTER(getit6bstore);
       for(k=0;k<(*a+1);k++){*(getit6b+k) = 0;}
 
-
-
       // read in data: /////////////////////////////////////////////////////////
       dat dat1;
       // (a) m/z
-      for(i=0;i<*a;i++){dat1.mass.push_back(mass[i]);}
+      for(i=0;i<(unsigned)*a;i++){dat1.mass.push_back(mass[i]);}
       // (b) retention time
-      for(i=0;i<*a;i++){dat1.retent.push_back(retent[i]);}
+      for(i=0;i<(unsigned)*a;i++){dat1.retent.push_back(retent[i]);}
       //////////////////////////////////////////////////////////////////////////
 
       // run search: ///////////////////////////////////////////////////////////
-      for(i=0;i<(*a);i++)
+      for(i=0;i<(unsigned)*a;i++)
       {
-       if((dat1.retent[i]!=dat1.retent[i-1]) || (i==0))
+       if((i==0) || (dat1.retent[i]!=dat1.retent[i-1]))
            {
             uptol=dat1.retent[i]+*rttolup;
             lowtol=dat1.retent[i]+*rttollow;
-            while((dat1.retent[rtup]<=uptol) & (rtup<(*a-1))){rtup=(rtup+1);};
+            while((rtup <(unsigned)*a - 1) && (dat1.retent[rtup]<=uptol)) {rtup=(rtup+1);};
             rtup=(rtup-1);
-            while((dat1.retent[rtlow]<lowtol) & (rtlow<(*a-1))){rtlow=(rtlow+1);};
+            while((rtlow <(unsigned)*a - 1) && (dat1.retent[rtlow]<lowtol)) {rtlow=(rtlow+1);};
             index.erase (index.begin(),index.end());
-            for(j=rtlow; (j<=rtup) & (j<*a); j++){
+            for(j=rtlow; (j<=rtup) && (j<(unsigned)*a); j++){
                          if(dat1.mass[j]>dat1.mass[i]){
                                           index.push_back(j);
                          };
             };
             sort(index.begin(),index.end(),dat1);
-      }else{ // if1
+      }else { // if1
             j=0;
-            while((dat1.mass[index[j]]<=dat1.mass[i]) & (j<((int)index.size())-1)){j++;};
-            index.erase(index.begin(),index.begin()+(j));
-           }; // if1
+            if (index.size()) {
+                while (((j < index.size() -1 ) && (dat1.mass[index[j]] <= dat1.mass[i]))){
+                     j++;
+                };
+                index.erase(index.begin(), index.begin() + j);
+            }
+      }; // if1
 
       howmany = index.size();
 
@@ -111,30 +114,34 @@ void mass(             double *mass, double *retent, int *a, double *masstol, do
                        upcount=0;
                        lowcount=0;
 
-                       for(k = 0; k<*manyisos; k++){
+                       for(k = 0; k<(unsigned)*manyisos; k++){
 
                              if(upcount<=(howmany-1)){
 
-                             while((dat1.mass[index[upcount]]<=(thismassup + isomat1[k])) & (upcount<(howmany-1))){upcount=(upcount+1);};
-                             while((dat1.mass[index[lowcount]]<(thismasslow + isomat1[k])) & (lowcount<(howmany-1))){lowcount=(lowcount+1);};
+                             while((upcount < howmany - 1)
+                                   && (dat1.mass[index[upcount]] <= (thismassup + isomat1[k]))) {
+                                 upcount = upcount + 1;
+                             };
+                             while((lowcount < howmany - 1)
+                                   && (dat1.mass[index[lowcount]]<(thismasslow + isomat1[k]))) {
+                                  lowcount =  lowcount + 1;
+                             };
 
                            if(lowcount==howmany){
-                              if( (dat1.mass[index[lowcount]]<=(thismassup + isomat1[k])) &
+                              if( (dat1.mass[index[lowcount]]<=(thismassup + isomat1[k])) &&
                                  (dat1.mass[index[lowcount]]>=(thismasslow + isomat1[k]))
-                             )
-                                                                        {
-                                                                        upcount=upcount+1;
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                        upcount=lowcount;
-                                                                        }
+                             ){
+                                upcount=upcount+1;
+                              }
+                              else {
+                                upcount=lowcount;
+                              }
                              };
 
                              if((upcount-lowcount)>0.0){
                                index2.erase (index2.begin(),index2.end());
                                for(l=lowcount;l<upcount;l++){index2.push_back(index[l]);};
-                               for(m=0;m<((int)index2.size());m++){
+                               for(m=0;m<index2.size();m++){
 
                                 if(*(getit2b+index2[m])<(*entry+1)){              // from?
                                     getit2[(index2[m]**entry)+(*(getit2b+index2[m]))]=(i+1);
@@ -158,7 +165,7 @@ void mass(             double *mass, double *retent, int *a, double *masstol, do
 
                                // in which mass tolerance?
                                // large or small?
-                               if((dat1.mass[index2[m]]<=(isomat1[k]+thismassup2)) & (dat1.mass[index2[m]]>=(isomat1[k]+thismasslow2))){
+                               if((dat1.mass[index2[m]]<=(isomat1[k]+thismassup2)) && (dat1.mass[index2[m]]>=(isomat1[k]+thismasslow2))){
 
                                      getit5[i**entry+*(getit5b+i)]=1;                       // 1 = small
                                      *(getit5b+i) = (*(getit5b+i)+1);
@@ -176,7 +183,7 @@ void mass(             double *mass, double *retent, int *a, double *masstol, do
                               if(upcount>howmany){upcount=lowcount;};
                              } // if
                             } // if
-                             } // for k
+                            } // for k
 
 
       }  // if howmany>0

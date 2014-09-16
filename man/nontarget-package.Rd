@@ -3,7 +3,7 @@
 \alias{nontarget}
 \docType{package}
 \title{
-Detecting, combining and filtering isotope, adduct and homologue series relations in high-resolution mass spectrometry (HRMS) data
+Detecting, Combining and Filtering Isotope, Adduct and Homologue Series Relations in High-Resolution Mass Spectrometry (HRMS) Data
 }
 \description{
 Grouping of peaks in a HRMS data set for (1) isotopic pattern relations and (2) different adducts of the same molecule; detection of (3) homologue series. 
@@ -131,11 +131,9 @@ adduct<-adduct.search(
   adducts,
   rttol=0.05,
   mztol=3,
-  massfrac=0.1,
   ppm=TRUE,
-  adducts=c("M+K","M+H","M+Na","M+NH4"),
-  ion_mode="positive",
-  entry=50
+  use_adducts=c("M+K","M+H","M+Na","M+NH4"),
+  ion_mode="positive"
 );
 # (2.2) plot results #################################
 plotadduct(adduct);

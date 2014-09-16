@@ -16,7 +16,7 @@ mzfilter=FALSE,vec_size=1E6)
 
 \arguments{
   \item{peaklist}{
-	Dataframe or matrix of HRMS peaks with three columns for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}.
+	Dataframe of HRMS peaks with three numeric columns for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}.
 }
   \item{isotopes}{
 	Dataframe \code{\link[enviPat]{isotopes}}
@@ -82,7 +82,7 @@ Input \code{isotopess} is needed to limit intermediate numbers of m/z difference
 Similarly, intermediate numbers are limited by the retention time and m/z windows defined by the \code{minrt / maxrt} and  \code{minmz / maxmz} arguments. The latter are always set relative to
 the individual RT and m/z values of the peaks to be searched from. 
 
-Peak IDs refer to the order in which peaks are listed in \code{peaklist}. Different group IDs exist for adduct groups, isotope pattern groups and homologue series peak 
+Peak IDs refer to the order in which peaks are provided. Different group IDs exist for adduct groups, isotope pattern groups and homologue series peak 
 groups. Yet other IDs exist for the individual components (see note section of \code{\link[nontarget]{combine}}).
 
 Here, IDs of homologue series group are given both in the function output \code{homol[[1]]} and \code{homol[[3]]}, with one homologue series stating one group of interrelated peaks.

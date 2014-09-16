@@ -56,6 +56,8 @@ final component list.
 }
 \note{
 Component IDs are allocated in decreasing peak intensity order of the most intensive peak per component, see section value, \code{comp[[1]]}.
+In contrast, IDs of individual peaks refer to the order in which peaks are provided. 
+
 
 Setting the argument \code{pattern} to \code{FALSE} skips the first step in the algorithm; adducts group are then only searched for a single peak along decreasing peak intensities.
 Setting the argument \code{adduct} to \code{FALSE} skips the second step in the algorithm; no adduct groups are then searched for.
@@ -87,8 +89,7 @@ List of type comp with 7 entries
 }
 
 \section{Imbecile}{
-Do not try to combine adduct pattern groups and/or isotope pattern groups and/or homologue series information resulting from different peak lists
-to components - that does not make much sense.
+Do not combine adduct pattern groups and/or isotope pattern groups and/or homologue series information from (a) different peak lists or (b) the same peak list differently ordered.
 } 
 
 \author{

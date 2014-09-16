@@ -11,7 +11,7 @@ plotdiff(peaklist, histbreaks = 10000, rttol = c(0, 0), mztol = c(0, 100), ploti
 }
 \arguments{
   \item{peaklist}{
-	Dataframe or matrix of HRMS peaks with three columns for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}.
+	Dataframe of HRMS peaks with three numeric columns for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}.
 	}
   \item{histbreaks}{
 	Number of histogram breaks.

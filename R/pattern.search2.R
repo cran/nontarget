@@ -32,7 +32,9 @@ pattern.search2<-function(
 	cat("\n(1) Check inputs ...");
 	if(mztol<=0){warning("mztol should be >0!")};
     if(inttol>1 || inttol<0){ stop("inttol must be >0 and <=1") };
-	if(length(peaklist)>3){stop("peaklist with > 3 columns not allowed")}
+	if(!is.data.frame(peaklist)){stop("peaklist must be a data.frame")}
+	if(length(peaklist[1,])>3){stop("peaklist with > 3 columns not allowed")}
+	if(!is.numeric(peaklist[,1]) || !is.numeric(peaklist[,2]) || !is.numeric(peaklist[,3]) ){stop("peaklist columns not numeric")}
 	if(ppm=="TRUE"){ppm2<-1}else{ppm2<-0}
 	if(use_isotopes[1]!="FALSE"){
 		if(any(is.na(match(use_isotopes,isotope_key)))){
@@ -68,7 +70,7 @@ pattern.search2<-function(
 			as.numeric(mztol), 			# precision measurement mass
 			as.numeric(ppm2),			# precision measurement - mass in ppm?
 			as.numeric(inttol),			# precision measurement, %percent, NOT fraction
-			as.numeric(rttol),			# precision measurement
+			as.numeric(rttol),			# precision measurement RT
 			pBar,
 			PACKAGE="nontarget"
 	)	
@@ -205,12 +207,31 @@ pattern.search2<-function(
 		}				
 	}
 	close(pBar)
-	if(length(from_peak)==0){stop("\n No matches found \n")}	
-	groups <- .Call("metagroup",
-		as.integer(from_peak),
-		as.integer(to_peak),
+	if(length(from_peak)==0){stop("\n No matches found \n")}
+	########################################################################################
+	# for grouping, include reverse relation - omit the reverse thereafter... ##############
+	# ... as opposed to adduct.search(), where relations go for- AND backward ##############
+	# sort relations by increasing ID of first entry #######################################
+	use<-c(rep(1,length(to_peak)),rep(2,length(to_peak)))
+	isotope<-c(isotope,isotope)
+	charge<-c(charge,charge)
+	to_peak2<-c(to_peak,from_peak)
+	from_peak2<-c(from_peak,to_peak)
+	use<-use[order(from_peak2,decreasing=FALSE)]
+	isotope<-isotope[order(from_peak2,decreasing=FALSE)]
+	charge<-charge[order(from_peak2,decreasing=FALSE)]
+	to_peak2<-to_peak[order(from_peak2,decreasing=FALSE)]
+	from_peak2<-from_peak[order(from_peak2,decreasing=FALSE)]
+	groups<-.Call("metagroup",
+		as.integer(from_peak2),
+		as.integer(to_peak2),
 		PACKAGE="nontarget" 
 	)
+	to_peak<-to_peak2[use==1]
+	from_peak<-from_peak2[use==1]
+	charge<-charge[use==1]
+	isotope<-isotope[use==1]
+	groups<-groups[use==1]
 	########################################################################################
 	# generate output ######################################################################
 	cat("(3) Create output ...");
@@ -230,6 +251,7 @@ pattern.search2<-function(
 		getit3[from_peak[i]]<-paste(getit3[from_peak[i]],"large",sep="/")
 		getit4[from_peak[i]]<-paste(getit4[from_peak[i]],as.character(charge[i]),sep="/")
 		getit5[from_peak[i]]<-paste(getit5[from_peak[i]],as.character(groups[i]),sep="/")
+		getit5[to_peak[i]]<-paste(getit5[to_peak[i]],as.character(groups[i]),sep="/")		
 		#getit6[relat[i,1]]<-paste(getit6[relat[i,1]],"-",sep="/")
 	}
 	for(i in 1:alls){	  
@@ -301,8 +323,8 @@ pattern.search2<-function(
 	names(charge_count)<-c("Charge level","Counts")
 	pattern[[5]]<-charge_count
 	# (6) Removal by rules #################################################################
-	pattern[[6]]<-numeric(0)
 	# (7) Number of peaks with pattern group overlapping ###################################
+	pattern[[6]]<-numeric(0)
 	pattern[[7]]<-"no information"
 	# (8) Number of peaks per within-group interaction levels ##############################
 	pattern[[8]]<-"no information"
@@ -351,7 +373,11 @@ pattern.search2<-function(
 		pattern[[9]]<-counts
 	}
 	# (10) Elements ########################################################################
-	pattern[[10]]<-as.character(unique(counts[,5]))
+	if(quick){
+		pattern[[10]]<-"no information"
+	}else{
+		pattern[[10]]<-as.character(unique(counts[,5]))
+	}
 	# (11) Charges #########################################################################
 	pattern[[11]]<-use_charges
 	# (12) Rule settings ###################################################################

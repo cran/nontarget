@@ -16,16 +16,16 @@
 
 
 struct part{
-    int from;
-    int to;
-    int dimension;
+    size_t from;
+    size_t to;
+    size_t dimension;
     std::vector<double> UB;
     std::vector<double> LB;
     std::vector<int> ended;
 };
 
 struct buck{
-    int counts;
+    size_t counts;
     double distort;
     std::vector<double> UB;
     std::vector<double> LB;
@@ -33,14 +33,14 @@ struct buck{
 };
 
 double *qua_a;
-int qua_b;
-bool smaller (int i,int j) {return(qua_a[qua_b+i]<qua_a[qua_b+j]);}
+size_t qua_b=0;
+bool smaller (size_t i,size_t j) {return(qua_a[qua_b+i]<qua_a[qua_b+j]);}
 
 extern "C"{
 
 
 /******************************************************************************/
-/* bucketing ******************************************************************/
+/* assign buckets *************************************************************/
 /******************************************************************************/
 
     SEXP bucket(
@@ -54,7 +54,8 @@ extern "C"{
             PROTECT(sized = AS_NUMERIC(sized));
             double *sized2;
             sized2 = NUMERIC_POINTER(sized);
-            int d,n,m,k,s,ncol,nrow,done,counter=0;
+            size_t n=0,m=0,d=0,k=0,s=0,ncol=0,nrow=0,counter=0;
+            int done;
             double gapsize,min_value,max_value;
             ncol=RCol(quant);
             nrow=RRow(quant);
@@ -265,7 +266,6 @@ extern "C"{
                     *rPercentComplete = counter;
                     eval(lang4(install("setTxtProgressBar"), pBar, percentComplete, R_NilValue), utilsPackage);
                 }
-
             }
 
             SEXP results;
@@ -337,8 +337,9 @@ extern "C"{
             double *scale_int2;
             scale_int2 = NUMERIC_POINTER(scale_int);
 
-            int leng = LENGTH(delmass);
-            int n,m,k,index_at,index_dist_to,leng2,leng3,index_temp;
+            size_t leng = LENGTH(delmass);
+            size_t n=0,m=0,k=0,leng2=0,leng3=0;
+            int index_dist_to=0,index_at=0,index_temp=0;
             double mindist,mindist_2,mindist_3,sumcount;
 
             /* initialize cluster container */
@@ -400,7 +401,7 @@ extern "C"{
                                         )/4);
                                         if(mindist_3<=mindist_2){
                                             mindist_2=mindist_3;
-                                            index_dist_to=m;
+                                            index_dist_to=(signed)m;
                                         };
                                     };
                                 };
@@ -424,7 +425,7 @@ extern "C"{
                                         )/4);
                                         if(mindist_3<=mindist_2){
                                             mindist_2=mindist_3;
-                                            index_dist_to=m;
+                                            index_dist_to=(signed)m;
                                         };
                                     };
                                 };
@@ -439,7 +440,7 @@ extern "C"{
                     dist_to[n]=index_dist_to;
                     if(mindist_2<=mindist){
                         mindist=mindist_2;
-                        index_at=(n-k); /* here: index_at = pointer on ID pointing to data */
+                        index_at=signed(n-k); /* here: index_at = pointer on ID pointing to data */
                     }
                 }else{
                     dist_to[n]=-1;

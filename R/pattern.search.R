@@ -1,17 +1,17 @@
 pattern.search <-
 function(
-		peaklist,
-		iso,
-		cutint=min(peaklist[,2]),
-		rttol=c(-0.5,0.5),
-		mztol=3,
-		mzfrac=0.1,
-        ppm=TRUE,
-		inttol=0.5,
-		rules=c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE),
-        deter=FALSE,
-		entry=20
-	){
+	peaklist,
+	iso,
+	cutint=min(peaklist[,2]),
+	rttol=c(-0.5,0.5),
+	mztol=3,
+	mzfrac=0.1,
+    ppm=TRUE,
+	inttol=0.5,
+	rules=c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE),
+    deter=FALSE,
+	entry=20
+){
 
     ############################################################################
     # (0) check inputs #########################################################
@@ -21,7 +21,9 @@ function(
     if(length(rttol)!=2){stop("rttol must have a lower and an upper bound!")};
     if(rttol[1]>rttol[2]){stop("minimum > maximum for rttol!")};
     if(length(rules)<11){stop("wrong parameter setting: number of rules < 8!")}
-    if(length(peaklist)>3){stop("peaklist with > 3 columns not allowed")}
+	if(!is.data.frame(peaklist)){stop("peaklist must be a data.frame")}
+	if(length(peaklist[1,])>3){stop("peaklist with > 3 columns not allowed")}
+	if(!is.numeric(peaklist[,1]) || !is.numeric(peaklist[,2]) || !is.numeric(peaklist[,3]) ){stop("peaklist columns not numeric")}
     if(rules[4]==TRUE & any(iso$elements=="C")==FALSE){stop("How is rule #7 supposed to work if carbon is not part of the iso argument? Include carbon or set rules[7] to FALSE.")}
 	############################################################################
     cat("\n (1) Assemble lists ... ");
@@ -36,18 +38,18 @@ function(
     manyisos<-iso[[4]];
     elements<-iso[[5]];
     if(deter==FALSE){
-      for(i in 1:length(elements)){
-        if(any(iso[[1]][,1]==elements[i])!=TRUE){
-          stop(paste("Element ",elements[i]," not found in iso[[5]]!",sep=""))
-        };
-      };
+		for(i in 1:length(elements)){
+			if(any(iso[[1]][,1]==elements[i])!=TRUE){
+				stop(paste("Element ",elements[i]," not found in iso[[5]]!",sep=""))
+			};
+		};
     }else{
-      rules=c(FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE);
+		rules=c(FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE);
     };
     # (1.2) objects required for the screening step ...
     # (1.2.1) ... 1: find mass increments
     alls<-length(samples[,1]);
-    ID<-seq(1:alls);
+	ID<-getback; # ID<-seq(1:alls);
     getit1<-rep("none",alls);   # (1) which isotope?
     getit2<-rep("0",alls);      # (2) from which peak?
     getit4<-rep("0",alls);      # (3) to which peak?
@@ -109,8 +111,8 @@ function(
     for(i in 1:(alls-1)){for(j in 1:entry){if(result[17][[1]][(i-1)*entry+j]!=0){getit4[i]<-paste(getit4[i],result[17][[1]][(i-1)*entry+j],sep="/")}}};
     # (4) tolerance: small or large? ###########################################
     for(i in 1:(alls-1)){for(j in 1:entry){
-      if(result[18][[1]][(i-1)*entry+j]==1){getit5[i]<-paste(getit5[i],"small",sep="/")};
-      if(result[18][[1]][(i-1)*entry+j]==2){getit5[i]<-paste(getit5[i],"large",sep="/")};
+		if(result[18][[1]][(i-1)*entry+j]==1){getit5[i]<-paste(getit5[i],"small",sep="/")};
+		if(result[18][[1]][(i-1)*entry+j]==2){getit5[i]<-paste(getit5[i],"large",sep="/")};
     }};
     # (5) charge level: ########################################################
     for(i in 1:(alls-1)){for(j in 1:entry){if(result[19][[1]][(i-1)*entry+j]!=0){getit6[i]<-paste(getit6[i],result[19][[1]][(i-1)*entry+j],sep="/")}}};
@@ -949,7 +951,7 @@ function(
     ############################################################################
     deep<-rep(0,1000);
     for(i in 1:length(group2)){
-      if(group2[i]!="0"){deep[as.numeric(strsplit(group2[i],"/")[[1]])]<-c((deep[as.numeric(strsplit(group2[i],"/")[[1]])])+1);
+		if(group2[i]!="0"){deep[as.numeric(strsplit(group2[i],"/")[[1]])]<-c((deep[as.numeric(strsplit(group2[i],"/")[[1]])])+1);
     }};
     deep<-deep[deep!=0];
     if(length(deep)>0){
@@ -963,12 +965,12 @@ function(
     names(hits)<-c("isotope","charge","peak counts","group counts","element");
     # increment counts
     for(j in 1:length(getit1)){
-      if(getit1[j]!="none"){
-        this1<-as.numeric(strsplit(getit1[j],"/")[[1]][-1]);
-        for(n in 1:length(this1)){
-          hits[this1[n],3]<-c( hits[this1[n],3]+ 1)
-        }
-      }
+		if(getit1[j]!="none"){
+			this1<-as.numeric(strsplit(getit1[j],"/")[[1]][-1]);
+			for(n in 1:length(this1)){
+				hits[this1[n],3]<-c( hits[this1[n],3]+ 1)
+			}
+		}
     }
     # group counts
     if(length(group4)>0){ # anything found at all?
@@ -1019,7 +1021,17 @@ function(
     # correct entries:
     for(i in 1:alls){
       if(getit2[i]!="0"){getit2[i]<-substr(getit2[i],3,nchar(getit2[i]))};
-      if(getit4[i]!="0"){getit4[i]<-substr(getit4[i],3,nchar(getit4[i]))};
+      if(getit4[i]!="0"){
+		getit4[i]<-substr(getit4[i],3,nchar(getit4[i]))
+		this30<-as.numeric(strsplit(getit4[i],"/")[[1]])
+		this31<-as.character(ID[this30[1]])
+		if(length(this30)>1){
+			for(j in 2:length(this30)){
+				this31<-paste(this31,"/",ID[this30[j]],sep="")
+			}
+		}
+		getit4[i]<-this31;
+	  };
       if(getit5[i]!="0"){getit5[i]<-sub("0/","",getit5[i])};
       if(getit6[i]!="0"){getit6[i]<-sub("0/","",getit6[i])};
       if(getit1[i]!="none"){
@@ -1058,31 +1070,47 @@ function(
     }
     ############################################################################
     grouped_samples<-data.frame(samples,ID,group1,group2,getit4,getit1,getit5,getit6);
-    names(grouped_samples)<-c(names(samples),"peak ID","group ID","interaction level","to ID","isotope(s)","mass tolerance","charge level")
+    grouped_samples<-grouped_samples[order(ID,decreasing=FALSE),]
+	names(grouped_samples)<-c(names(samples),"peak ID","group ID","interaction level","to ID","isotope(s)","mass tolerance","charge level")
     #
     parameters<-data.frame(rttol[1],rttol[2],mztol,mzfrac,ppm,inttol,cutint,deter)
+	#
     if(length(group4)>0){
-      for(k in 1:length(group3)){
-        group3[k]<-paste("/",group3[k],"/",sep="")
-      }
-      grouping<-data.frame(group3,group4,group6);
-      for(k in 1:length(group4)){ # sort peak IDs per group: increasing mass
-        this210<-as.numeric(strsplit(group4[k],",")[[1]]);
-        this210<-this210[order(samples[this210,3],decreasing=FALSE)];
-        group4[k]<-as.character(this210[1])
-        for(n in 2:length(this210)){
-          group4[k]<-paste(group4[k],this210[n],sep=",")
-        }
-      }
-      names(grouping)<-c("group ID","peak IDs","charge level");
+		for(k in 1:length(group3)){
+			group3[k]<-paste("/",group3[k],"/",sep="")
+		}
+		for(k in 1:length(group4)){
+			this30<-as.numeric(strsplit(group4[k],",")[[1]])
+			this31<-as.character(ID[this30[1]])
+			if(length(this30)>1){
+				for(j in 2:length(this30)){
+					this31<-paste(this31,",",ID[this30[j]],sep="")
+				}
+			}
+			group4[k]<-this31;
+		}
+		grouping<-data.frame(group3,group4,group6);
+		names(grouping)<-c("group ID","peak IDs","charge level");
     }else{
-      grouping<-"no groups assembled"
+		grouping<-"no groups assembled"
     }
     #
     pattern<-list(grouped_samples,parameters,grouping,groupinfo,groupcount,removals,this11,deep,hits,elements,iso[[3]],rules);
     #
-    names(pattern)<-c("Patterns","Parameters","Peaks in pattern groups","Atom counts","Count of pattern groups","Removals by rules","Number of peaks with pattern group overlapping","Number of peaks per within-group interaction levels",
-    "Counts of isotopes","Elements","Charges","Rule settings");
+    names(pattern)<-c(
+		"Patterns",
+		"Parameters",
+		"Peaks in pattern groups",
+		"Atom counts",
+		"Count of pattern groups",
+		"Removals by rules",
+		"Number of peaks with pattern group overlapping",
+		"Number of peaks per within-group interaction levels",
+		"Counts of isotopes",
+		"Elements",
+		"Charges",
+		"Rule settings"
+	);
     ############################################################################
     cat("done.\n\n");
     # clean up! ##################################################################

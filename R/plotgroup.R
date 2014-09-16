@@ -1,8 +1,14 @@
-plotgroup <-function(pattern,adduct=FALSE,groupID,massrange=10,allmass=TRUE){
+plotgroup <-function(
+	pattern,
+	adduct=FALSE,
+	groupID,
+	massrange=10,
+	allmass=TRUE
+){
 
   ##############################################################################
   # check arguments
-  if(any(grepl(paste("/",groupID,"/",sep=""),as.character(pattern[[3]][,1]),fixed=TRUE))==FALSE){stop("Which group? Group number invalid or too big!")}
+  if(any(grepl(paste("/",groupID,"/",sep=""),as.character(pattern[[3]][,1]),fixed=TRUE))==FALSE){stop("Invalid group number!\n")}
   if(massrange<=0){stop("set massrange >0!")}
   ##############################################################################
 

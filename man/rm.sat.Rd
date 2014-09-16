@@ -8,13 +8,13 @@ Removal of satellite peaks from FT-MS peak lists
 Brute force method to remove satellite peak from a FT-HRMS peak list.
 }
 \usage{
-rm.sat(peaks, dmz = 0.3, drt = 0.3, intrat = 0.01, spar = 0.8, 
+rm.sat(peaklist, dmz = 0.3, drt = 0.3, intrat = 0.01, spar = 0.8, 
 corcut = 0.8, plotit = TRUE)
 }
 
 \arguments{
-  \item{peaks}{
-	Dataframe or matrix of HRMS peaks with three columns for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}.
+  \item{peaklist}{
+	Dataframe of HRMS peaks with three numeric columns for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}.
 	}
   \item{dmz}{
 	m/z window around a parent peak within which satellite peaks are searched for.

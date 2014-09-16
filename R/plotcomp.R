@@ -1,6 +1,11 @@
 plotcomp <-
-function(comp,compoID,peakID=FALSE){
+function(
+	comp,
+	compoID,
+	peakID=FALSE
+){
 
+            ####################################################################
             def.par <- par(no.readonly = TRUE) # save default, for resetting...
             sc<-close.screen();if(sc[1]!=FALSE){for(m in 1:length(sc)){close.screen(sc[m])}};
             if(compoID==FALSE & peakID==FALSE){stop("what? compoID? peakID?")}
@@ -112,7 +117,7 @@ function(comp,compoID,peakID=FALSE){
                 rm(i);
             }
             ####################################################################
-            # plot ! ###########################################################
+            # plot #############################################################
             layout(matrix(ncol=2,nrow=5,c(1,1,1,1,2,1,1,1,1,2)));
             par(mar=c(1,1,1,1));
             plot.new();
@@ -156,13 +161,13 @@ function(comp,compoID,peakID=FALSE){
                  }
               }};rm(i);};
             }
-            # point on most intensive peak! ####################################
+            # point on most intensive peak #####################################
             if(length(comp[[2]])>1){
               dat3<-comp[[2]][get1,];
               that<-dat3[dat3[,2]==max(dat3[,2]),][,4];
               points(coordx[get3==that],coordy[get3==that],pch=21,cex=3);
             }
-            # mark direction! ##################################################
+            # mark direction ###################################################
             lines(c(-0.25,-0.21),c(1.15,1.0),col="darkgrey");
             arrows(-0.25,1.15,0.1,1.15,length=0.1,col="darkgrey");
             text(0.2,1.15,labels="m/z",col="darkgrey");

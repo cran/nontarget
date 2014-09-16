@@ -1,5 +1,10 @@
 plothomol<-
-function(homol,xlim=FALSE,ylim=FALSE,plotlegend=TRUE){
+function(
+	homol,
+	xlim=FALSE,
+	ylim=FALSE,
+	plotlegend=TRUE
+){
 
     ############################################################################
     # check inputs #############################################################

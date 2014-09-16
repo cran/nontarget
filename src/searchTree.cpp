@@ -92,7 +92,7 @@ extern "C"{
 /* build groups from peak-peak relations **************************************/
 /******************************************************************************/
 
-      SEXP metagroup(
+    SEXP metagroup(
         SEXP proffrom, /* must be sorted */
         SEXP profto
     ){
@@ -189,6 +189,94 @@ extern "C"{
             return group;
 
 }
+
+
+/******************************************************************************/
+/* adduct -> adduct search ****************************************************/
+/******************************************************************************/
+
+    SEXP adduct_search(
+        SEXP peaklist,
+        SEXP peakTree,
+        SEXP add2,
+        SEXP prec_mass,
+        SEXP prec_ppm,
+        SEXP RT_tol,
+        SEXP pBar
+    ){
+
+        PROTECT(peaklist = AS_NUMERIC(peaklist));
+        PROTECT(peakTree = AS_NUMERIC(peakTree));
+        PROTECT(add2 = AS_NUMERIC(add2));
+        PROTECT(prec_mass = AS_NUMERIC(prec_mass));
+        double prec_mass2 = NUMERIC_VALUE(prec_mass);
+        PROTECT(prec_ppm = AS_INTEGER(prec_ppm));
+        int prec_ppm2 = INTEGER_VALUE(prec_ppm);
+        PROTECT(RT_tol = AS_NUMERIC(RT_tol));
+        double RT_tol2 = NUMERIC_VALUE(RT_tol);
+
+        std::deque<int> from_peak (0);
+        std::deque<int> to_peak (0);
+        std::deque<int> adduct_pair (0);
+        int n=0,m=0,k=0,leng_peaks=0,leng_add=0,from=0,to=0;
+        leng_peaks=RRow(peaklist);
+        leng_add=RRow(add2);
+        double prec_dm;
+
+        SEXP utilsPackage; /* definitions for the progress bar */
+        PROTECT(utilsPackage = eval(lang2(install("getNamespace"), ScalarString(mkChar("utils"))), R_GlobalEnv));
+        SEXP percentComplete;
+        PROTECT(percentComplete = NEW_NUMERIC(1));
+        double *rPercentComplete;
+        rPercentComplete = NUMERIC_POINTER(percentComplete);
+        SEXP bounds_peaks;
+        PROTECT(bounds_peaks = allocMatrix(REALSXP, 2, 2));
+
+        for(n=0;n<leng_peaks;n++){
+            *rPercentComplete = n;
+            eval(lang4(install("setTxtProgressBar"), pBar, percentComplete, R_NilValue), utilsPackage);
+            if(prec_ppm2==1){
+                prec_dm=(2*(RMATRIX(peaklist,n,0)*prec_mass2/1E6));
+            }else{
+                prec_dm=(2*prec_mass2);
+            }
+            RMATRIX(bounds_peaks,1,0)=(RMATRIX(peaklist,n,1)-RT_tol2);
+            RMATRIX(bounds_peaks,1,1)=(RMATRIX(peaklist,n,1)+RT_tol2);
+            for(m=0;m<leng_add;m++){
+
+                RMATRIX(bounds_peaks,0,0)=(((((RMATRIX(peaklist,n,0)-prec_dm)-RMATRIX(add2,m,2))*RMATRIX(add2,m,0)/RMATRIX(add2,m,1))*RMATRIX(add2,m,4)/RMATRIX(add2,m,3))+RMATRIX(add2,m,5));
+                RMATRIX(bounds_peaks,0,1)=(((((RMATRIX(peaklist,n,0)+prec_dm)-RMATRIX(add2,m,2))*RMATRIX(add2,m,0)/RMATRIX(add2,m,1))*RMATRIX(add2,m,4)/RMATRIX(add2,m,3))+RMATRIX(add2,m,5));
+
+                from=to_peak.size();
+                search_tree_sub(peaklist, peakTree, bounds_peaks, to_peak);
+                to=to_peak.size();
+                if(to>from){
+                    for(k=from;k<to;k++){
+                        from_peak.push_back(n);
+                        adduct_pair.push_back(m);
+                    }
+                }
+            }
+        }
+
+        k=to_peak.size();
+        SEXP results;
+        PROTECT(results = allocMatrix(REALSXP, k, 3));
+        double *results2;
+        results2 = REAL(results);
+        for(n=0;n<k;n++){
+                results2[n]=(from_peak.front()+1);
+                from_peak.pop_front();
+                results2[k+n]=(to_peak.front()+1);
+                to_peak.pop_front();
+                results2[(2*k)+n]=(adduct_pair.front()+1);
+                adduct_pair.pop_front();
+        }
+        UNPROTECT(10);
+        return(results);
+
+    }
+
 
 /******************************************************************************/
 /* peak -> peak search - ******************************************************/

@@ -1,303 +1,174 @@
 adduct.search <-
 function(
-                    peaklist,
-					adducts,
-                    rttol=0,
-					mztol=2,
-					massfrac=0.1,
-					ppm=TRUE,
-                    use_adducts=c("M+H","M+K","M+Na"),
-					ion_mode="positive",
-                    entry=20
-        ){
+    peaklist,
+	adducts,
+    rttol=0,
+	mztol=2,
+	ppm=TRUE,
+    use_adducts=c("M+H","M+K","M+Na"),
+	ion_mode="positive"
+){
 
     ############################################################################
     # (0) check inputs #########################################################
-    if( massfrac>1 || massfrac<=0 ){ stop("massfrac must be >0 and <=1") };
-    if(ion_mode!="positive" & ion_mode!="negative"){stop("ion mode: positive or negative?")}
-    for(i in 1:length(use_adducts)){if(any(adducts[,1]==use_adducts[i])!=TRUE &  any(adducts[adducts[,1]==use_adducts[i],6]==ion_mode)){stop(paste("Adduct ",use_adducts[i]," not in adducts!",sep=""))}};
+    if(ion_mode!="positive"&ion_mode!="negative"){stop("ion mode: positive or negative?")}
+    use_adducts<-unique(use_adducts)
+	if(!is.character(use_adducts)){stop("invalid use_adducts - not a vector of character strings")}
+	if(length(use_adducts)<2){stop("at least two entries in use_adducts required")}
+	for(i in 1:length(use_adducts)){if(any(adducts[,1]==use_adducts[i])!=TRUE&any(adducts[adducts[,1]==use_adducts[i],6]==ion_mode)){stop(paste("Adduct ",use_adducts[i]," not in adducts!",sep=""))}};
     for(i in 1:length(use_adducts)){if((adducts[adducts[,1]==use_adducts[i],6]!=ion_mode)){stop(paste(use_adducts[i]," not in ion mode ",ion_mode,sep=""))}};
-    if(length(peaklist)>3){stop("peaklist with > 3 columns not allowed")}
+	if(!is.data.frame(peaklist)){stop("peaklist must be a data.frame")}
+	if(length(peaklist[1,])>3){stop("peaklist with > 3 columns not allowed")}
+	if(!is.numeric(peaklist[,1])||!is.numeric(peaklist[,2])||!is.numeric(peaklist[,3])){stop("peaklist columns not numeric")}
     ############################################################################
-    cat("\n (1) Assemble lists...");
-    # (1.1) sort peaklist etc
-    getback<-order(peaklist[,3],peaklist[,1],decreasing=FALSE);
-    samples<-peaklist[getback,];
-    alls<-length(peaklist[,1]);
-    # (1.2) storage ...
-    ID<-seq(1:alls);
-    getit1<-rep("none",alls);     # (1) which adduct removed <-> added?
-    getit2<-rep("0",alls);        # (2) from which peak?
-    getit4<-rep("0",alls);        # (3) to which peak?
-    getit5<-rep("0",alls);        # (4) within [1] large or [2] small mass tolerance?
-    # (1.3) retrieve selected subset of adducts
-    use_adducts<-as.character(levels(as.factor(use_adducts)))
+    cat("\n(1) Combine adducts...");
     these<-match(use_adducts,adducts[,1]);
     these<-these[is.na(these)==FALSE];
     add<-adducts[these,];
     add<-add[add[,6]==ion_mode,];
     if(length(add[,1])<1){stop("No selected use_adducts among adducts ... abort!")};
-    add2<-data.frame(0,0,0,0,0);
-    add3<-c();
-    names(add2)<-c("mult1","mass1","mult2","mass2","count")
+    add2<-data.frame(0,0,0,0,0,0,0);
+    add3_a<-c();
+	add3_b<-c();
+    names(add2)<-c("charge1","mult1","mass1","charge2","mult2","mass2","count")
     that<-c(2);
-    for(i in 1:(length(add[,1]))){
-		for(j in 1:length(add[,1])){
-			if(i!=j){
-				add2<-rbind(add2,rep(0,5));
-				add2[that,1]<-add[i,4];
-				add2[that,2]<-add[i,5];
-				add2[that,3]<-add[j,4];
-				add2[that,4]<-add[j,5];
-				that<-c(that+1);
-				add3<-c(add3,paste(add[i,1],add[j,1],sep="<->"));
-			}
+    for(i in 1:(length(add[,1])-1)){
+		for(j in (i+1):length(add[,1])){
+			add2<-rbind(add2,rep(0,7));
+			add2[that,1]<-abs(add[i,3]);
+			add2[that,2]<-add[i,4];
+			add2[that,3]<-add[i,5];
+			add2[that,4]<-abs(add[j,3]);
+			add2[that,5]<-add[j,4];
+			add2[that,6]<-add[j,5];
+			that<-c(that+1);
+			add3_a<-c(add3_a,paste(add[i,1],add[j,1],sep="<->"));
+			add3_b<-c(add3_b,paste(add[j,1],add[i,1],sep="<->"));				
 		}; #j
     }; #i
     add2<-add2[-1,];
-    #data.frame(add3,add2);
     cat("done.");
     ############################################################################
-
-    ############################################################################
-    # (2) run search ###########################################################
-    cat("\n (2) Screen for mass increments...");
-    if(ppm==TRUE){ppm2=1}else{ppm2=2};
-    getit1a<-rep(0,alls*entry);
-    getit2a<-rep(0,alls*entry);
-    getit4a<-rep(0,alls*entry);
-    getit5a<-rep(0,alls*entry);
-    maxmass<-max(peaklist[,1]);
-    result<-.C("adduct",
-		as.double(samples[,1]),
-		as.double(samples[,3]),
-		as.integer(length(samples[,1])),  	# 3
-		as.double(mztol*2),
-		as.double(massfrac*2),
-		as.double(rttol),    				# 6
-		as.integer(length(add2[,1])),       # 7
-		as.double(add2[,1]),
-		as.double(add2[,2]),
-		as.double(add2[,3]),
-		as.double(add2[,4]),
-		as.integer(add2[,5]),    			# 12
-		as.integer(entry),
-		as.integer(ppm2),                   # 14
-		as.integer(getit1a),
-		as.integer(getit2a),
-		as.integer(getit4a),
-		as.integer(getit5a), 				# 18
+	cat("\n(2) Build peaklist kd-tree, screen, ... \n");
+	pBar <- txtProgressBar( min = 0, max = length(peaklist[,1]), style = 3 )
+	peakTree<-.Call("kdtree4", 
+		as.matrix(peaklist[,c(1,3)]),
+		pBar,
 		PACKAGE="nontarget"
-    );
-    # (1) which adduct?
-    for(i in 1:(alls-1)){
-		for(j in 1:entry){
-			if(result[15][[1]][(i-1)*entry+j]!=0){
-				getit1[i]<-paste(getit1[i],result[15][[1]][(i-1)*entry+j],sep="/")
-			}
-		}
+	);
+	close(pBar)
+	peakTree<-peakTree[,1:4];
+	if(ppm=="TRUE"){ppm2<-1}else{ppm2<-0}
+	pBar <- txtProgressBar(min = 0, max = length(peaklist[,1]), style = 3 )
+ 	relat<-.Call("adduct_search",
+		as.matrix(peaklist[,c(1,3)]),  	# peaklist
+		as.matrix(peakTree),			# peaks - search tree
+		as.matrix(add2),				# adduct table
+		as.numeric(mztol), 				# precision measurement mass
+		as.integer(ppm2),				# precision measurement - mass in ppm?
+		as.numeric(rttol),				# precision measurement RT
+		pBar,	
+		PACKAGE="nontarget"
+	);
+	close(pBar)
+	# check for self-referencing ###############################################	
+	if(any(relat[,1]==relat[,2])){
+		cat("remove self-references ...");
+		relat<-relat[relat[,1]!=relat[,2],];
 	};
-    # (2) from which peak?
-    for(i in 1:(alls-1)){
-		for(j in 1:entry){
-			if(result[16][[1]][(i-1)*entry+j]!=0){
-				getit2[i]<-paste(getit2[i],getback[result[16][[1]][(i-1)*entry+j]],sep="/")
-			}
-		}
-	};
-    # (3) to which peak?
-    for(i in 1:(alls-1)){
-		for(j in 1:entry){
-			if(result[17][[1]][(i-1)*entry+j]!=0){
-				getit4[i]<-paste(getit4[i],getback[result[17][[1]][(i-1)*entry+j]],sep="/")
-			}
-		}
-	};
-    # (4) tolerance: small or large?
-    for(i in 1:(alls-1)){
-		for(j in 1:entry){
-			if(result[18][[1]][(i-1)*entry+j]==1){
-				getit5[i]<-paste(getit5[i],"small",sep="/")
-			};
-			if(result[18][[1]][(i-1)*entry+j]==2){
-				getit5[i]<-paste(getit5[i],"large",sep="/")
-			};
-		}
-	};
-    if(result[13][[1]]!=entry){
-		cat("WARNING: entry overflow -> links missing!")
-	};
-    #data.frame(ID,getit4,getit2,getit1,getit5)
-    rm(result);
+	if(length(relat)==0){stop("\n No matches found \n ")}
+	# form groups ##############################################################
+	relat<-rbind(
+		cbind(relat,rep(1,length(relat[,1]))),
+		cbind(relat[,c(2,1,3)],rep(2,length(relat[,1])))
+	);
+	relat<-relat[order(relat[,1],decreasing=FALSE),];	
+	groups<-.Call("metagroup",
+		as.integer(relat[,1]),
+		as.integer(relat[,2]),
+		PACKAGE="nontarget" 
+	);
+    cat("done.");
     ############################################################################
-    
-    ############################################################################
-    # correct outputs for missing adduct combis (only submatrix searched!) #####
-    for(i in 1:alls){
+	cat("\n(3) Create output ... ");
+    # (3.1) Peakwise ###########################################################
+	getit1<-rep("none",length(peaklist[,1]));     # (1) which adduct removed <-> added?
+    getit2<-rep("0",length(peaklist[,1]));        # (2) to which peak?
+    getit3<-rep("0",length(peaklist[,1]));        # (3) within [1] large or [2] small mass tolerance?
+	getit4<-rep("0",length(peaklist[,1]));        # (4) which group?
+	for(i in 1:length(relat[,1])){
+		if(relat[i,4]==1){
+			getit1[relat[i,1]]<-paste(getit1[relat[i,1]],add3_a[relat[i,3]],sep="//")
+		}else{
+			getit1[relat[i,1]]<-paste(getit1[relat[i,1]],add3_b[relat[i,3]],sep="//")		
+		}
+		getit2[relat[i,1]]<-paste(getit2[relat[i,1]],as.character(relat[i,2]),sep="/")
+		getit3[relat[i,1]]<-paste(getit3[relat[i,1]],"large",sep="/")
+		getit4[relat[i,1]]<-paste(getit4[relat[i,1]],as.character(groups[i]),sep="/")
+	}
+	for(i in 1:length(getit1)){
 		if(getit1[i]!="none"){
-			this12<-as.numeric(strsplit(as.character(getit1[i]),"/")[[1]][-1]);
-			if(length(this12)==1){
-				getit1[i]<-paste("none//",add3[this12],"//",sep="");
-			}else{
-				getit1[i]<-paste("none//",add3[this12[1]],"//",sep="");
-				for(j in 2:length(this12)){
-					getit1[i]<-paste(getit1[i],add3[this12[j]],"//",sep="");
-				}
-			};
-		};
-    };
-    for(i in 1:alls){
-      if(getit4[i]!="0"){
-        this1<-strsplit(as.character(getit4[i]),"/")[[1]];
-        this2a<-strsplit(as.character(getit1[i]),"//")[[1]];
-        this5<-strsplit(as.character(getit5[i]),"/")[[1]];
-        this2a<-this2a[this1!="0"];
-        this5<-this5[this1!="0"];
-        this1<-this1[this1!="0"];
-        this2<-c();this3<-c();
-        for(j in 1:length(this2a)){
-              this2<-c(this2,strsplit(as.character(this2a[j]),"<->")[[1]][1]);
-              this3<-c(this3,strsplit(as.character(this2a[j]),"<->")[[1]][2]);
-        };
-        for(j in 1:length(this1)){
-			this10<-strsplit(as.character(getit4[as.numeric(this1[j])]),"/")[[1]]
-			this11<-strsplit(as.character(getit1[as.numeric(this1[j])]),"//")[[1]]
-			if((any(this10==as.character(i)) & any(this11==paste(this3[j],"<->",this2[j],sep=""))) == FALSE ){
-				getit4[as.numeric(this1[j])]<-paste(getit4[as.numeric(this1[j])],i,sep="/");
-				if(getit1[as.numeric(this1[j])]=="none"){
-					getit1[as.numeric(this1[j])]="none//"
-					getit1[as.numeric(this1[j])]<-paste(getit1[as.numeric(this1[j])],paste(this3[j],"<->",this2[j],"//",sep=""),sep="");
-				}else{
-					getit1[as.numeric(this1[j])]<-paste(getit1[as.numeric(this1[j])],paste(this3[j],"<->",this2[j],"//",sep=""),sep="");
-				}
-				getit5[as.numeric(this1[j])]<-paste(getit5[as.numeric(this1[j])],this5[j],sep="/");
-			};
-        };
-      };
-    };
-    #data.frame(ID,getit4,getit1);
-    cat("done.");
-    ############################################################################
-
-    ############################################################################
-    # (4) group ################################################################
-    cat("\n (3) Group peaks ...");
-    ############################################################################
-    group1<-c(); # groupnumber?
-    group2<-c(); # which peaks?
-    group3<-c(); # which use_adducts?
-    group4<-rep(0,alls); # groupnumber? 1-alls
-    groupnumber<-c(1);
-    getit1b<-getit1;
-    getit4b<-getit4;
-    for(i in 1:alls){
-    if(getit4b[i]!="0"){
-        this1<-as.numeric(strsplit(as.character(getit4b[i]),"/")[[1]][-1]);
-        this2a<-strsplit(as.character(getit1b[i]),"//")[[1]][-1];
-        this2<-c();this3<-c();
-        for(j in 1:length(this2a)){
-            this2<-c(this2,strsplit(as.character(this2a[j]),"<->")[[1]][1]);
-            this3<-c(this3,strsplit(as.character(this2a[j]),"<->")[[1]][2]);
-        };
-        this4<-levels(as.factor(this2));
-        for(j in 1:length(this4)){
-          # assemble group information  ########################################
-          group1<-c(group1,groupnumber);
-          group2b<-(as.character(i)); ##########################################
-          for(k in 1:length(this1[this2==this4[j]])){group2b<-paste(group2b,"/",this1[this2==this4[j]][k],sep="");};
-          group2<-c(group2,group2b);
-          group3b<-(as.character(this4[j])); ###################################
-          for(k in 1:length(this2[this2==this4[j]])){group3b<-paste(group3b,"/",this3[this2==this4[j]][k],sep="");};
-          group3<-c(group3,group3b);
-          this5<-as.numeric(strsplit(as.character(group2[groupnumber]),"/")[[1]]); ###########
-          for(k in 1:length(this5)){group4[this5[k]]<-paste(group4[this5[k]],"/",groupnumber,sep="")};
-          ######################################################################
-          # excise these entries in ALL group members ##########################
-          for(k in 1:length(this1[this2==this4[j]])){
-              g4<-strsplit(as.character(getit4b[this1[this2==this4[j]][k]]),"/")[[1]][-1];
-              g1<-strsplit(as.character(getit1b[this1[this2==this4[j]][k]]),"//")[[1]][-1];
-              getit<-rep(TRUE,length(g4));
-              getit[(g4==as.character(i) & g1==paste(this3[this2==this4[j]][k],"<->",this4[j],sep=""))]<-FALSE
-              for(m in 1:length(this1[this2==this4[j]])){
-                getit[(g4==as.character(this1[this2==this4[j]][m]) & g1==paste(this3[this2==this4[j]][k],"<->",this3[this2==this4[j]][m],sep=""))]<-FALSE;
-              }
-              getit1b[this1[this2==this4[j]][k]]<-"none";
-              getit4b[this1[this2==this4[j]][k]]<-"0";
-              g1<-g1[getit];
-              g4<-g4[getit];
-              if(length(g1)>0){
-                for(n in 1:length(g1)){
-                    getit1b[this1[this2==this4[j]][k]]<-paste(getit1b[this1[this2==this4[j]][k]],"//",g1[n],sep="");
-                    getit4b[this1[this2==this4[j]][k]]<-paste(getit4b[this1[this2==this4[j]][k]],"/",g4[n],sep="");
-                    };
-                getit1b[this1[this2==this4[j]][k]]<-paste(getit1b[this1[this2==this4[j]][k]],"//",sep="");
-              };              
-          };
-          ######################################################################
-          groupnumber<-c(groupnumber+1);
-        } # for j
-    } # if
-    } # for i
-    #data.frame(group1,group2,group3);
-    cat("done.");
-    ############################################################################
-
-    ############################################################################
-    # (4) apply rules ##########################################################
-    #cat("\n (4) Check plausibility...");
-
-    #cat("done.");
-    ############################################################################
-
-    ############################################################################
-    # (4) generate output ######################################################
-    cat("\n (4) Generate output...");
-    ############################################################################
-    parameters<-data.frame(rttol,mztol,massfrac,ppm,ion_mode);
-    ############################################################################
-    # correct entries:
-    for(i in 1:alls){
-      if(getit2[i]!="0"){getit2[i]<-substr(getit2[i],3,nchar(getit2[i]))};
-      if(getit4[i]!="0"){getit4[i]<-substr(getit4[i],3,nchar(getit4[i]))};
-      if(getit5[i]!="0"){getit5[i]<-sub("0/","",getit5[i])};
-      if(getit1[i]!="none"){getit1[i]<-sub("none//","",getit1[i])};
-      if(group4[i]!="0"){group4[i]<-substr(group4[i],3,nchar(group4[i]))};
-    };
-    for(i in 1:length(group2)){
-      leng<-length(strsplit(as.character(group2[i]),"/")[[1]])
-      for(k in 1:leng){group2[i]<-sub("/",",",group2[i],fixed=TRUE);};
-    };
-    ############################################################################
-    # count hits !
+			getit1[i]<-substr(getit1[i],7,nchar(getit1[i]))
+			getit2[i]<-substr(getit2[i],3,nchar(getit2[i]))
+			getit3[i]<-substr(getit3[i],3,nchar(getit3[i]))
+			getit4[i]<-strsplit(getit4[i],"/")[[1]][2]
+		}
+	}	
+    ID<-seq(1:length(peaklist[,1]));	
+    list_adducts<-data.frame(peaklist[,1:3],ID,getit4,getit2,getit1,getit3);
+    names(list_adducts)<-c("m/z","int","ret","peak ID","group ID","to ID","adduct(s)","mass tolerance");
+	# (3.2) Groupwise ##########################################################
+    group1<-paste("/",as.character(1:max(groups)),"/",sep="") 	# groupnumber?
+    group2<-rep("",max(groups)); 								# which peaks?
+    group3<-rep("",max(groups)); 								# which use_adducts?
+	group4<-rep("FALSE",max(groups)); 							# any(ambiguous adduct)?
+	for(i in 1:length(getit1)){
+		if(getit1[i]!="none"){
+			this<-strsplit(getit1[i],"//")[[1]]
+			this<-strsplit(this,"<->")
+			that<-c() # adduct uniquely assigned?
+			for(j in 1:length(this)){
+				that<-c(that,this[[j]][1])
+			}
+			that<-unique(that)
+			if(length(that)>1){
+				group4[as.numeric(getit4[i])]<-"TRUE";
+			}
+			for(j in 1:length(that)){
+				group2[as.numeric(getit4[i])]<-paste(group2[as.numeric(getit4[i])],as.character(i),sep=",")
+				group3[as.numeric(getit4[i])]<-paste(group3[as.numeric(getit4[i])],that[j],sep="/")
+			}
+		}
+	}
+	group2<-substr(group2,2,nchar(group2))
+	group3<-substr(group3,2,nchar(group3))
+    grouping<-data.frame(group1,group2,group3,group4);
+    names(grouping)<-c("group ID","peak IDs","adducts","ambig.?");
+	overlaps<-sum(as.numeric(as.logical(group4)));
+    # (3.3) counts of adduct matches ###########################################
     hits<-data.frame(use_adducts,rep(0,length(use_adducts)));
     names(hits)<-c("names","counts");
     for(i in 1:length(group1)){
-      this1<-strsplit(as.character(group3[i]),"/")[[1]];
-      for(j in 1:length(this1)){hits[hits[,1]==this1[j],2]<-hits[hits[,1]==this1[j],2]+1;};
+		this1<-strsplit(as.character(group3[i]),"/")[[1]];
+		for(j in 1:length(this1)){
+			hits[hits[,1]==this1[j],2]<-hits[hits[,1]==this1[j],2]+1;
+		};
     };
-    ############################################################################
-    # overlaps!
-    overlaps<-data.frame(seq(1:100),rep(0,100));
-    names(overlaps)<-c("number of groups in overlap","counts");
-    for(i in 1:alls){if(group4[i]!="0"){overlaps[length(strsplit(as.character(group4[i]),"/")[[1]]),2]<-overlaps[length(strsplit(as.character(group4[i]),"/")[[1]]),2]+1;}};
-    overlaps<-overlaps[overlaps[,2]!=0,];
-    ############################################################################
-    # groups!
-    for(k in 1:length(group1)){
-        group1[k]<-paste("/",group1[k],"/",sep="")
-    }
-    grouping<-data.frame(group1,group2,group3);
-    names(grouping)<-c("group ID","peak IDs","use_adducts");
-    ############################################################################
-    list_adducts<-data.frame(peaklist[,1:3],ID,group4,getit4,getit1,getit5);
-    names(list_adducts)<-c(names(peaklist)[1:3],"peak ID","group ID","to ID","adduct(s)","mass tolerance");
+	# list #####################################################################
+    parameters<-data.frame(rttol,mztol,ppm,ion_mode);	
     adduct<-list(list_adducts,parameters,grouping,hits,overlaps);
-    names(adduct)<-c("adducts","Parameters","Peaks in adduct groups","Adduct counts","Number of peaks with grouped adducts overlapping");
+    names(adduct)<-c("adducts","Parameters","Peaks in adduct groups","Adduct counts","Overlaps");
     cat("done.\n\n");
-    ############################################################################
-
     ############################################################################
     return(adduct);
     ############################################################################
 
 }
+
+
+
+
+
+
+
+

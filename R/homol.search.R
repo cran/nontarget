@@ -1,20 +1,20 @@
 homol.search <-
 function(
-		peaklist,
-		isotopes,
-		elements=c("C","H","O"),
-		charge=c(1,2),
-		use_C=TRUE,
-		minmz=5,
-		maxmz=60,
-		minrt=0.5,
-		maxrt=2,
-		ppm=TRUE,
-		mztol=3.5,
-        rttol=0.5,
-		minlength=4,
-		mzfilter=FALSE,
-		vec_size=1E6
+	peaklist,
+	isotopes,
+	elements=c("C","H","O"),
+	charge=c(1,2),
+	use_C=TRUE,
+	minmz=5,
+	maxmz=60,
+	minrt=0.5,
+	maxrt=2,
+	ppm=TRUE,
+	mztol=3.5,
+    rttol=0.5,
+	minlength=4,
+	mzfilter=FALSE,
+	vec_size=1E6
 ){
   
     ##########################################################################
@@ -26,6 +26,9 @@ function(
     charge<-abs(charge);
 	if(!is.numeric(mzfilter) & mzfilter[1]!="FALSE"){stop("mzfilter must either be a numeric vector or set to FALSE")}
 	if(any(is.na(match(elements,isotopes[,1])))){ stop("unknown elements") }
+	if(!is.data.frame(peaklist)){stop("peaklist must be a data.frame")}
+	if(length(peaklist[1,])>3){stop("peaklist with > 3 columns not allowed")}
+	if(!is.numeric(peaklist[,1]) || !is.numeric(peaklist[,2]) || !is.numeric(peaklist[,3]) ){stop("peaklist columns not numeric")}
 	##########################################################################
     # (1) retrieve feasible mass differences & all combinations thereof ######
 	# (1.1) upper & lower mass defect / mass bound ###########################

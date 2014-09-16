@@ -5,11 +5,11 @@
 HRMS peak list
 }
 \description{
-HPLC-HRMS peak list of a sewage treatment plant effluent sample. 
+LC-HRMS peak list of a sewage treatment plant effluent sample. 
 }
 \usage{data(peaklist)}
 \format{
-  A data frame with 11172 observations on the following 3 variables.
+  Numeric data frame with 11172 observations on the following 3 variables.
   \describe{
     \item{\code{mass}}{Peak m/z}
     \item{\code{intensity}}{Peak intensity}

@@ -1,5 +1,11 @@
 plotdiff <-
-function(peaklist,histbreaks=10000,rttol=c(0,0),mztol=c(0,100),plotit=TRUE){
+function(
+	peaklist,
+	histbreaks=10000,
+	rttol=c(0,0),
+	mztol=c(0,100),
+	plotit=TRUE
+){
 
   ##############################################################################
   # screen over all differences ################################################
@@ -8,6 +14,9 @@ function(peaklist,histbreaks=10000,rttol=c(0,0),mztol=c(0,100),plotit=TRUE){
   if(rttol[1]>rttol[2]){stop("minimum > maximum for rttol!")}
   if(mztol[1]>mztol[2]){stop("minimum > maximum for mztol!")}
   if(length(mztol)!=2){stop("masstol must have a lower and an upper bound!")}
+  if(!is.data.frame(peaklist)){stop("peaklist must be a data.frame")}
+  if(length(peaklist[1,])>3){stop("peaklist with > 3 columns not allowed")}
+  if(!is.numeric(peaklist[,1]) || !is.numeric(peaklist[,2]) || !is.numeric(peaklist[,3]) ){stop("peaklist columns not numeric")}
   difs<-c();
   fin<-c(length(peaklist[,1]));
   getit<-seq(1,fin,1);

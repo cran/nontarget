@@ -30,8 +30,8 @@ extern "C"{
     ){
 
             PROTECT(storage = AS_INTEGER(storage));
-            int *stor;
-            stor = INTEGER_POINTER(storage);
+            size_t stor;
+            stor = INTEGER_VALUE(storage);
             PROTECT(mass = AS_NUMERIC(mass));
             double *mass2;
             mass2 = NUMERIC_POINTER(mass);
@@ -63,8 +63,8 @@ extern "C"{
             double *rttol2;
             rttol2 = NUMERIC_POINTER(rttol);
             PROTECT(minleng = AS_INTEGER(minleng));
-            int *minleng2;
-            minleng2 = INTEGER_POINTER(minleng);
+            size_t minleng2;
+            minleng2 = INTEGER_VALUE(minleng);
 
             SEXP utilsPackage; /* definitions for the progres bar */
             PROTECT(utilsPackage = eval(lang2(install("getNamespace"), ScalarString(mkChar("utils"))), R_GlobalEnv));
@@ -73,46 +73,46 @@ extern "C"{
             double *rPercentComplete;
             rPercentComplete = NUMERIC_POINTER(percentComplete);
 
-            int k,m,n,x,z,homnum,countit,a,b,c,d,g,anew;
+            size_t k,m,n,x,z,homnum,countit,a,b,c,d,g,anew;
             double delmz3;
-            int leng = LENGTH(mass);
-            int lengbound = (LENGTH(highbound));
+            unsigned int leng = LENGTH(mass);
+            unsigned int lengbound = LENGTH(highbound);
 
             SEXP from;
-            PROTECT(from = NEW_INTEGER(*stor));
+            PROTECT(from = NEW_INTEGER(stor));
             int *atfrom;
             atfrom = INTEGER_POINTER(from);
-            for(n=0;n<*stor;n++){*(atfrom+n) = 0;}
+            for(n=0;n<stor;n++){*(atfrom+n) = 0;}
             SEXP to;
-            PROTECT(to = NEW_INTEGER(*stor));
+            PROTECT(to = NEW_INTEGER(stor));
             int *atto;
             atto = INTEGER_POINTER(to);
-            for(n=0;n<*stor;n++){*(atto+n) = 0;};
+            for(n=0;n<stor;n++){*(atto+n) = 0;};
             SEXP dmass;
-            PROTECT(dmass = NEW_NUMERIC(*stor));
+            PROTECT(dmass = NEW_NUMERIC(stor));
             double *atdmass;
             atdmass = NUMERIC_POINTER(dmass);
-            for(n=0;n<*stor;n++){*(atdmass+n) = 0;};
+            for(n=0;n<stor;n++){*(atdmass+n) = 0;};
             SEXP usemass;
-            PROTECT(usemass = NEW_NUMERIC(*stor));
+            PROTECT(usemass = NEW_NUMERIC(stor));
             double *atusemass;
             atusemass = NUMERIC_POINTER(usemass);
-            for(n=0;n<*stor;n++){*(atusemass+n) = 0;};
+            for(n=0;n<stor;n++){*(atusemass+n) = 0;};
             SEXP dRT;
-            PROTECT(dRT = NEW_NUMERIC(*stor));
+            PROTECT(dRT = NEW_NUMERIC(stor));
             double *atdRT;
             atdRT = NUMERIC_POINTER(dRT);
-            for(n=0;n<*stor;n++){*(atdRT+n) = 0;};
+            for(n=0;n<stor;n++){*(atdRT+n) = 0;};
             SEXP ordit;
-            PROTECT(ordit = NEW_INTEGER(*stor));
+            PROTECT(ordit = NEW_INTEGER(stor));
             int *atordit;
             atordit = INTEGER_POINTER(ordit);
-            for(n=0;n<*stor;n++){*(atordit+n) = n;};
+            for(n=0;n<stor;n++){*(atordit+n) = n;};
             SEXP fertig;
-            PROTECT(fertig = NEW_INTEGER(*stor));
+            PROTECT(fertig = NEW_INTEGER(stor));
             int *fer;
             fer = INTEGER_POINTER(fertig);
-            for(n=0;n<*stor;n++){*(fer+n) = 0;};
+            for(n=0;n<stor;n++){*(fer+n) = 0;};
             SEXP atk;
             PROTECT(atk = NEW_INTEGER(leng));
             int *atk2;
@@ -132,7 +132,7 @@ extern "C"{
             std::vector<double> do_dmz;
             std::vector<double> do_tolmz;
             std::vector<double> do_dRT;
-            std::vector<int> do_index;
+            std::vector<unsigned int> do_index;
 
             x=0;
             homnum=1;
@@ -145,13 +145,13 @@ extern "C"{
                 void R_CheckUserInterrupt(void);
                 /* (2) ... find relevant masss differences ... */
                 for(n=0;n<(leng-1);n++){
-                    if( m >= ((*stor)-1) ){ Rprintf("increase vector!"); break; }
+                    if( m >= ((stor)-1) ){ Rprintf("increase vector!"); break; }
                     for(k=*(atk2+n);k<leng;k++){
                         if( *(mass2+k) > ( *(mass2+n) + *(highbound2+z) )){
                             *(atk2+n)=k;
                             break;
                         }
-                        if( m >= ((*stor)-1) ){ Rprintf("increase vector!"); break; }
+                        if( m >= ((stor)-1) ){ Rprintf("increase vector!"); break; }
                         if( (*(RT2+k)>=(*(RT2+n)+*minrt2)) && (*(RT2+k)<=(*(RT2+n)+*maxrt2)) ){
                             if(
                                ((*(mass2+k)-*(mass2+n))<=*(highbound2+z))&&
@@ -171,7 +171,7 @@ extern "C"{
                 R_orderVector(atordit,m,Rf_lang1(dmass),FALSE,FALSE);
                 /* (4) ... and screen those mass differences: */
                 void R_CheckUserInterrupt(void);
-                for(n=0;n<*stor;n++){*(fer+n) = 0;};
+                for(n=0;n<stor;n++){*(fer+n) = 0;};
                 for(n=0;n<m;n++){
                     if( *(fer+n)==0 ){
                         *(fer+n) = 1;
@@ -269,7 +269,7 @@ extern "C"{
                             a=b;
                             b=g;
                         }
-                        if(countit>=*minleng2){
+                        if(countit>=minleng2){
                             for(c=0;c<countit;c++){
                                 out_from.push_back (do_from[c]);
                                 out_to.push_back (do_to[c]);

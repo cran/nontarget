@@ -16,7 +16,7 @@ use_marker=TRUE,quick=FALSE,isotopes)
 
 \arguments{
   \item{peaklist}{
-	Dataframe of HRMS peaks (centroids) with three columns for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}
+	Dataframe of HRMS peaks with three numeric columns for (a) m/z, (b) intensity and (c) retention time, such as \code{\link[nontarget]{peaklist}}
 }
   \item{quantiz}{
 	Quantized simulation data of feasible centroid-centroid relations as provided by package \code{nontargetData}
@@ -67,6 +67,9 @@ Internally, the quantized simulation data is queried by a tree-like space-partit
 }
 
 \note{
+Peak IDs refer to the order in which peaks are provided. 
+
+
 If you do not find quantized simulation data for your instrument in package \code{nontargetData} and you can provide resolution=f(m/z) information: contact maintainer.
 }
 
