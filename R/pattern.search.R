@@ -24,7 +24,7 @@ function(
 	if(!is.data.frame(peaklist)){stop("peaklist must be a data.frame")}
 	if(length(peaklist[1,])>3){stop("peaklist with > 3 columns not allowed")}
 	if(!is.numeric(peaklist[,1]) || !is.numeric(peaklist[,2]) || !is.numeric(peaklist[,3]) ){stop("peaklist columns not numeric")}
-    if(rules[4]==TRUE & any(iso$elements=="C")==FALSE){stop("How is rule #7 supposed to work if carbon is not part of the iso argument? Include carbon or set rules[7] to FALSE.")}
+    if(rules[4]==TRUE & any(iso$elements=="C")==FALSE & deter!=TRUE){stop("How is rule #7 supposed to work if carbon is not part of the iso argument? Include carbon or set rules[7] to FALSE.")}
 	############################################################################
     cat("\n (1) Assemble lists ... ");
     # (1) define parameters / lists / matrices / ... ###########################
@@ -584,7 +584,7 @@ function(
     #names(it)<-c("ID","to","from","isotope","tol","charge")
     cat("done.");
     }else{
-    cat("\n (4) Plausibility tests skipped. ");
+    cat("\n (3) Plausibility tests skipped. ");
     } # if deter == FALSE
     ############################################################################
     ############################################################################

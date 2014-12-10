@@ -65,8 +65,8 @@ plotdefect(pattern,elements=c("Br"));
 plotdefect(pattern,elements=c("S"));
 plotdefect(pattern,elements=c("C"));
 plotdefect(pattern,elements=c("K"));
-# but:
-plotdefect(pattern,elements=c("P"));
+# P has only one isotope, hence:
+# plotdefect(pattern,elements=c("P"));
 }
 }
 

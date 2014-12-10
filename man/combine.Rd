@@ -51,7 +51,7 @@ The second test checks whether variations in peak intensities within isotope pat
 must account for uncertainty in peak intensities via argument inttol of \code{\link[nontarget]{pattern.search}}. 
 The third check examines whether interfering peaks occur.
 The fourth check takes effect if a component consists of merged isotope pattern groups (only relevant if several z-levels were employed, see charges argument of \code{\link[nontarget]{pattern.search}}).
-These warning indices can then be used to exclude components affected, using argument restr. For example, \code{restr=c(1,3)} excludes components with ambiguous adduct relations and interfering peaks from the 
+These warning indices can then be used to exclude components affected, using argument \code{dont. }For example, \code{dont=c(1,3)} excludes components with ambiguous adduct relations and interfering peaks from the 
 final component list.
 }
 \note{
@@ -108,6 +108,56 @@ Martin Loos
 }
 \examples{
 \donttest{
+
+######################################################
+# (0) Group for isotopologues, adducts & homologues  # 
+data(peaklist);
+data(adducts);
+data(isotopes);
+iso<-make.isos(isotopes,
+	use_isotopes=c("13C","15N","34S","37Cl","81Br","41K","13C","15N","34S","37Cl","81Br","41K"),
+	use_charges=c(1,1,1,1,1,1,2,2,2,2,2,2))
+pattern<-pattern.search(
+  peaklist,
+  iso,
+  cutint=10000,
+  rttol=c(-0.05,0.05),
+  mztol=2,
+  mzfrac=0.1,
+  ppm=TRUE,
+  inttol=0.2,
+  rules=c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE),
+  deter=FALSE,
+  entry=50
+);
+adduct<-adduct.search(
+  peaklist,
+  adducts,
+  rttol=0.05,
+  mztol=3,
+  ppm=TRUE,
+  use_adducts=c("M+K","M+H","M+Na","M+NH4"),
+  ion_mode="positive"
+);
+homol<-homol.search(
+		peaklist,
+		isotopes,
+		elements=c("C","H","O"),
+		charge=c(1,2),
+		use_C=TRUE,
+		minmz=5,
+		maxmz=60,
+		minrt=0.5,
+		maxrt=2,
+		ppm=TRUE,
+		mztol=3.5,
+        rttol=0.5,
+		minlength=4,
+		mzfilter=FALSE,
+		vec_size=1E6
+)
+##############################################################
+# Combine these individual groups to components              #
 ##############################################################
 # (1) Standard setting:                                      #
 # Produce a component list, allowing for single-peaked       #

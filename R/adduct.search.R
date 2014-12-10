@@ -80,7 +80,7 @@ function(
 	# form groups ##############################################################
 	relat<-rbind(
 		cbind(relat,rep(1,length(relat[,1]))),
-		cbind(relat[,c(2,1,3)],rep(2,length(relat[,1])))
+		cbind(relat[,c(2,1,3),drop = FALSE],rep(2,length(relat[,1])))
 	);
 	relat<-relat[order(relat[,1],decreasing=FALSE),];	
 	groups<-.Call("metagroup",

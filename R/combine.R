@@ -44,9 +44,9 @@ function(
     };
     if(rules[3]==TRUE & length(homol)<1){stop("rule3 = TRUE not applicable if no correct homologue series are provided!")};
     if(dont[1]!=FALSE){
-		if(length(dont)>3){stop("Invalid dont")};
-		if(any(dont>3)){stop("Invalid dont")};
-		if(any(dont<1)){stop("Invalid dont")};
+		if(length(dont)>4){stop("Invalid dont argument")};
+		if(any(dont>4)){stop("Invalid dont argument")};
+		if(any(dont<1)){stop("Invalid dont argument")};
     }
     if(length(pattern)>1 & length(adduct)>1){
 		if((adduct[[2]][4]=="negative" & any(as.numeric(pattern[[11]])>0)) || (adduct[[2]][4]=="positive" & any(as.numeric(pattern[[11]])<0))){
@@ -480,6 +480,8 @@ function(
 			}
 		}
 		comps<-comps[excl,]
+		comp8<-comp8[excl]
+		comp9<-comp9[excl]
 		} # if done
     } # if done
     # sort by decreasing intensity of ALL peaks and ############################ 

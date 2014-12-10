@@ -78,11 +78,9 @@ adduct<-adduct.search(
   adducts,
   rttol=0.05,
   mztol=3,
-  massfrac=0.1,
   ppm=TRUE,
-  adducts=c("M+K","M+H","M+Na","M+NH4"),
-  ion_mode="positive",
-  entry=50
+  use_adducts=c("M+K","M+H","M+Na","M+NH4"),
+  ion_mode="positive"
 );
 plotgroup(pattern,adduct,groupID=3,massrange=10,allmass=FALSE)
 #############################################################

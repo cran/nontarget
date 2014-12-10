@@ -49,7 +49,6 @@ Martin Loos
 \examples{
 \donttest{
 data(peaklist)
-plotdiff(peaklist, histbreaks = 10000, rttol = c(0, 0), mztol = c(0, 100), plotit = TRUE)
-plotdiff(peaklist, histbreaks = 10000, rttol = c(5, 10), mztol = c(0, 100), plotit = TRUE)
+diffs<-plotdiff(peaklist, histbreaks = 10000, rttol = c(0, 0), mztol = c(0, 100), plotit = TRUE)
 }
 }

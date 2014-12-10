@@ -52,7 +52,7 @@ Also see \code{deter} argument of \code{\link[nontarget]{pattern.search}}.
 }
 
 \note{
-Experimental. For consistent results, use \code{\link[nontarget]{make.isos}} instead.
+Experimental. For more consistent results, use \code{\link[nontarget]{make.isos}} instead.
 }
 
 \author{
@@ -66,8 +66,9 @@ Martin Loos
 }
 \examples{
 \donttest{
+data(peaklist)
 diffs<-plotdiff(peaklist, histbreaks = 10000, rttol = c(0, 0), mztol = c(0.3, 100), plotit = TRUE);
-iso<-deter.iso(diffs,histbreaks=10000,mzmin=0,mzmax=40,cutcount=350,plotit=TRUE);
+iso<-deter.iso(diffs,histbreaks=10000,mzmin=0,mzmax=40,cutcount=500,plotit=TRUE);
 pattern<-pattern.search(
   peaklist,
   iso,
@@ -77,6 +78,7 @@ pattern<-pattern.search(
   mzfrac=0.1,
   ppm=FALSE,
   inttol=0.2,
+  #rules=c(FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE),
   rules=c(TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE),
   deter=TRUE,
   entry=50

@@ -177,18 +177,9 @@ plotisotopes(comp);
 plotcomp(comp,compoID=1,peakID=FALSE);
 ######################################################
 # (6) Select data from interactive plot ##############
-dat<-ms.filter( 
-	component=comp,
-	x="mz",y="dm",
-	xlim=FALSE,
-	ylim=FALSE,
-	rm.comp=TRUE,
-	plot.comp=TRUE,
-	rm.noncomp=FALSE,
-	select.polygon="inside",
-	res=100,
-	filter.for="raw" 
-);
+# ms.filter( component=comp,x="mz",y="dm",xlim=FALSE,
+# ylim=FALSE,rm.comp=TRUE,plot.comp=TRUE,rm.noncomp=FALSE,
+# select.polygon="inside",res=100,filter.for="raw" );
 ######################################################
 
 }

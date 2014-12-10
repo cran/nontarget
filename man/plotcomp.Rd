@@ -45,8 +45,6 @@ groups. Moreover, and at the highest level, IDs exist for the individual compone
 
 }
 
-
-
 \seealso{
 	\code{\link[nontarget]{combine}}
 }
