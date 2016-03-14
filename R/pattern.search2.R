@@ -27,13 +27,13 @@ pattern.search2<-function(
 	size_deltamass<-(size_deltamass+max_d_delmz)
 	size_mass<-(size_mass+max_d_mass)
 	size_intens<-(size_intens+max_d_ratio)
-	quant<-quantiz[[6]]
 	mass_slots<-quantiz[[7]]		
 	cat("\n(1) Check inputs ...");
-	if(mztol<=0){warning("mztol should be >0!")};
+	if(mztol<0){warning("mztol should be >=0!")};
     if(inttol>1 || inttol<0){ stop("inttol must be >0 and <=1") };
 	if(!is.data.frame(peaklist)){stop("peaklist must be a data.frame")}
 	if(length(peaklist[1,])>3){stop("peaklist with > 3 columns not allowed")}
+	if(!length(peaklist[,1])>1){stop("peaklist with one entry - doesn`t make sense ...")}
 	if(!is.numeric(peaklist[,1]) || !is.numeric(peaklist[,2]) || !is.numeric(peaklist[,3]) ){stop("peaklist columns not numeric")}
 	if(ppm=="TRUE"){ppm2<-1}else{ppm2<-0}
 	if(use_isotopes[1]!="FALSE"){
@@ -42,7 +42,8 @@ pattern.search2<-function(
 		}
 	}
 	if(use_charges[1]!="FALSE"){
-		if(any(is.na(match(use_charges,charge_key)))){
+		use_charges2<-abs(use_charges)
+		if(any(is.na(match(use_charges2,charge_key)))){
 			paste("invalid use_charges, available only: ",sep="");print(charge_key);stop();
 		}
 	}
@@ -51,26 +52,29 @@ pattern.search2<-function(
 	# prescreen for relevant peak-to-peak mass differences: mass + int slots ############### 
 	cat("\n(2) Build peaklist kd-tree, screen slots, query quantized data: \n");
 	pBar <- txtProgressBar( min = 0, max = length(peaklist[,1]), style = 3 )
+	inter<-as.numeric(interactive())
 	peakTree<-.Call("kdtree4", 
-			as.matrix(peaklist[,c(1,2,3)]),
+			as.matrix(peaklist[,1:3]),
+			as.integer(inter),
 			pBar,
 			PACKAGE="nontarget"
 	);
 	close(pBar);
-	peakTree<-peakTree[,1:4]
+	peakTree<-peakTree[,1:4,drop=FALSE];
 	cat("\n screen ... ");
 	mass_slots<-quantiz[[7]]
-	int_slots<-quantiz[[8]]
+	int_slots<-(10^quantiz[[8]])
 	pBar <- txtProgressBar( min = 0, max = length(peaklist[,1]), style = 3 )
 	relat<-.Call("peak_search", 
 			as.matrix(peaklist[,1:3]),
 			as.matrix(peakTree),		# peaks - search tree
 			as.matrix(mass_slots),		# prefilter on mass
-			as.matrix(int_slots),		# prefilter on intensity ratioes
+			as.matrix(int_slots),		# prefilter on intensity ratios
 			as.numeric(mztol), 			# precision measurement mass
 			as.numeric(ppm2),			# precision measurement - mass in ppm?
 			as.numeric(inttol),			# precision measurement, %percent, NOT fraction
 			as.numeric(rttol),			# precision measurement RT
+			as.integer(inter),
 			pBar,
 			PACKAGE="nontarget"
 	)	
@@ -78,18 +82,19 @@ pattern.search2<-function(
 	if(length(relat)<1){stop("\n No matches found \n ")}
 	########################################################################################
 	# find matches in quantized data #######################################################
-	cat("\n(3) Query quantized data ... ");	
 	done<-matrix(ncol=length(charge_key),nrow=length(isotope_key),FALSE) # w/ marker necesssary?
 	colnames(done)<-charge_key
 	rownames(done)<-isotope_key
 	search_bounds<-rep(0,6)
-	marker_bounds<-rep(0,6)
-	marker_bounds[3]<-min(peaklist[,2])
-	marker_bounds[4]<-max(peaklist[,2])
+	marker_bounds<-matrix(ncol=2,nrow=3,0)
+	marker_bounds[2,1]<-min(peaklist[,2])
+	marker_bounds[2,2]<-max(peaklist[,2])
+	bound_int<-log10((1+inttol)/(1-inttol)) # epsilon_4
 	from_peak<-c()
 	to_peak<-c()
 	isotope<-c()
 	charge<-c()
+	retr_1<-0; # number of queries 	
 	pBar <- txtProgressBar( min = 0, max = length(relat[,1]), style = 3 )
 	for(j in 1:length(relat[,1])){
 		done[,]<-FALSE;
@@ -107,82 +112,91 @@ pattern.search2<-function(
 		search_bounds[3]<-(peaklist[relat[j,1],1]+adductmass_LB)
 		search_bounds[4]<-(peaklist[relat[j,1],1]+adductmass_UB)
 		# intensity bounds: extend by intensity tolerance
-		search_bounds[5]<-((peaklist[relat[j,1],2]-(peaklist[relat[j,1],2]*inttol))/(peaklist[relat[j,2],2]+(peaklist[relat[j,2],2]*inttol)))
-		search_bounds[6]<-((peaklist[relat[j,1],2]+(peaklist[relat[j,1],2]*inttol))/(peaklist[relat[j,2],2]-(peaklist[relat[j,2],2]*inttol)))
+		log_int<-log10(peaklist[relat[j,1],2]/peaklist[relat[j,2],2])
+		search_bounds[5]<-(log_int-bound_int)	# Lower bound
+		search_bounds[6]<-(log_int+bound_int) 	# Upper bound
 		# iterate over all quantizations	
-		for(i in 1:length(quant)){
+		for(i in 1:length(quantiz[[6]])){
 			# use this isotope & charge ? #########################################
 			do<-TRUE;
 			if(use_isotopes[1]!=FALSE){
-				if(!any(use_isotopes==isotope_key[as.numeric(strsplit(names(quant)[i],"_")[[1]][1])])){
+				if(!any(use_isotopes==isotope_key[as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][1])])){
 					do<-FALSE;
 				}
 			}
 			if(use_charges[1]!=FALSE){
-				if(!any(use_charges==as.numeric(strsplit(names(quant)[i],"_")[[1]][2]))){
+				if(!any(use_charges2==as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][2]))){
 					do<-FALSE;
 				}
 			}
 			if(do==FALSE){next}
 			# without marker peak #################################################
-			if(strsplit(names(quant)[i],"_")[[1]][3]=="wo"){
+			if(strsplit(names(quantiz[[6]])[i],"_")[[1]][3]=="wo"){
 				found <- .Call("search_boxtree", 
-						as.matrix(quant[[i]][,1:6]),
-						as.matrix(quant[[i]][,16:20]),
+						quantiz[[6]][[i]][,1:6],
+						quantiz[[6]][[i]][,16:20],
 						as.numeric(search_bounds),
 						as.integer(0),
 						PACKAGE="nontarget"
-				)	
+				)
+				retr_1<-c(retr_1+1)					
 				if(found==-2){
-					done[as.numeric(strsplit(names(quant)[i],"_")[[1]][1]),as.numeric(strsplit(names(quant)[i],"_")[[1]][2])]<-TRUE;
+					done[as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][1]),as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][2])]<-TRUE;
 					from_peak<-c(from_peak,relat[j,1])
 					to_peak<-c(to_peak,relat[j,2])
-					isotope<-c(isotope,as.numeric(strsplit(names(quant)[i],"_")[[1]][1]))
-					charge<-c(charge,as.numeric(strsplit(names(quant)[i],"_")[[1]][2]))
+					isotope<-c(isotope,as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][1]))
+					charge<-c(charge,as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][2]))
 					got<-TRUE;
-				}		
+				}				
 			}
 			if(got & quick) break;
+			if(got) next;
 			# with marker peak ####################################################
-			if(strsplit(names(quant)[i],"_")[[1]][3]=="w"){
-				if(done[as.numeric(strsplit(names(quant)[i],"_")[[1]][1]),as.numeric(strsplit(names(quant)[i],"_")[[1]][2])]==FALSE){  # if not hit w/o marker
-					if(use_marker!="TRUE"){ # just check
+			if(strsplit(names(quantiz[[6]])[i],"_")[[1]][3]=="w"){
+				if(done[as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][1]),as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][2])]==FALSE){  # if not hit w/o marker - just check
+					if(use_marker!="TRUE"){ # just check for intersection
 						found <- .Call("search_boxtree", 
-								as.matrix(quant[[i]][,1:6]),
-								as.matrix(quant[[i]][,16:20]),
+								quantiz[[6]][[i]][,1:6],
+								quantiz[[6]][[i]][,16:20],
 								as.numeric(search_bounds),
 								as.integer(0),
 								PACKAGE="nontarget"
 						)	
 						if(found==-2){
-							done[as.numeric(strsplit(names(quant)[i],"_")[[1]][1]),as.numeric(strsplit(names(quant)[i],"_")[[1]][2])]<-FALSE;
+							done[as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][1]),as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][2])]<-TRUE;
 							from_peak<-c(from_peak,relat[j,1])
 							to_peak<-c(to_peak,relat[j,2])
-							isotope<-c(isotope,as.numeric(strsplit(names(quant)[i],"_")[[1]][1]))
-							charge<-c(charge,as.numeric(strsplit(names(quant)[i],"_")[[1]][2]))
+							isotope<-c(isotope,as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][1]))
+							charge<-c(charge,as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][2]))
 							got<-TRUE;
-						}							
-					}else{ # check explicitly for marker peak
+						}
+						retr_1<-c(retr_1+1)							
+					}else{ # check explicitly for marker peak 
 						found <- .Call("search_boxtree", 
-								as.matrix(quant[[i]][,1:6]),
-								as.matrix(quant[[i]][,16:20]),
+								quantiz[[6]][[i]][,1:6],
+								quantiz[[6]][[i]][,16:20],
 								as.numeric(search_bounds),
-								as.integer(1),
+								as.integer(1), # return full findings
 								PACKAGE="nontarget"
 						)	
+						retr_1<-c(retr_1+1)	
 						if(length(found)>0){
-							for(k in 1:length(found)){
-								marker_delmass<-c((peaklist[relat[j,1],1]-quant[[i]][found[k],8]),(peaklist[relat[j,1],1]-quant[[i]][found[k],7]))
+							for( k in 1:length(found) ){
+								marker_delmass<-c((peaklist[relat[j,2],1]-quantiz[[6]][[i]][found[k],8]),(peaklist[relat[j,2],1]-quantiz[[6]][[i]][found[k],7]))
+								# marker m/z bounds
 								if(ppm==TRUE){
-									marker_bounds[1]<-(min(marker_delmass)-(2*mztol*peaklist[relat[j,1],1]/1E6))
-									marker_bounds[2]<-(max(marker_delmass)+(2*mztol*peaklist[relat[j,1],1]/1E6))
+									marker_bounds[1,1]<-(min(marker_delmass)-(2*mztol*peaklist[relat[j,1],1]/1E6))
+									marker_bounds[1,2]<-(max(marker_delmass)+(2*mztol*peaklist[relat[j,1],1]/1E6))
 								}else{
-									marker_bounds[1]<-(min(marker_delmass)-(2*mztol))
-									marker_bounds[2]<-(max(marker_delmass)+(2*mztol))
+									marker_bounds[1,1]<-(min(marker_delmass)-(2*mztol))
+									marker_bounds[1,2]<-(max(marker_delmass)+(2*mztol))
 								}
-								# set above: marker_bounds[3] & marker_bounds[4]
-								marker_bounds[5]<-(peaklist[relat[j,1],3]-rttol)
-								marker_bounds[6]<-(peaklist[relat[j,1],3]+rttol)
+								# marker intensity bounds. set above: marker_bounds[4]; reset lower bound
+								max_int<-max(peaklist[relat[j,],2])
+								marker_bounds[2,1]<-(max_int*(1-inttol))
+								# marker RT bounds
+								marker_bounds[3,1]<-(peaklist[relat[j,1],3]-rttol)
+								marker_bounds[3,2]<-(peaklist[relat[j,1],3]+rttol)
 								found_m<-.Call("search_kdtree", 
 										as.matrix(peaklist[,1:3]),
 										as.matrix(peakTree),		# peaks - search tree
@@ -190,20 +204,24 @@ pattern.search2<-function(
 										PACKAGE="nontarget"
 								)	
 								if(length(found_m)>1){
+									done[as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][1]),as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][2])]<-TRUE;
 									from_peak<-c(from_peak,relat[j,1])
 									to_peak<-c(to_peak,relat[j,2])
-									isotope<-c(isotope,as.numeric(strsplit(names(quant)[i],"_")[[1]][1]))
-									charge<-c(charge,as.numeric(strsplit(names(quant)[i],"_")[[1]][2]))
-									got<-TRUE;
+									isotope<-c(isotope,as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][1]))
+									charge<-c(charge,as.numeric(strsplit(names(quantiz[[6]])[i],"_")[[1]][2]))
+									got<-TRUE
+									break; # on this isotope & charge
 								}
 							}
 						}
 					}
 				}
 			}
-			if(got & quick) break;
 			#######################################################################		
-			setTxtProgressBar(pBar,j,title = NULL, label = NULL)			
+			if(inter==1){
+				setTxtProgressBar(pBar,j,title = NULL, label = NULL)			
+			}
+			if(got & quick) break;
 		}				
 	}
 	close(pBar)
@@ -220,8 +238,8 @@ pattern.search2<-function(
 	use<-use[order(from_peak2,decreasing=FALSE)]
 	isotope<-isotope[order(from_peak2,decreasing=FALSE)]
 	charge<-charge[order(from_peak2,decreasing=FALSE)]
-	to_peak2<-to_peak[order(from_peak2,decreasing=FALSE)]
-	from_peak2<-from_peak[order(from_peak2,decreasing=FALSE)]
+	to_peak2<-to_peak2[order(from_peak2,decreasing=FALSE)]
+	from_peak2<-from_peak2[order(from_peak2,decreasing=FALSE)]
 	groups<-.Call("metagroup",
 		as.integer(from_peak2),
 		as.integer(to_peak2),
@@ -232,6 +250,7 @@ pattern.search2<-function(
 	charge<-charge[use==1]
 	isotope<-isotope[use==1]
 	groups<-groups[use==1]
+	cat(paste("\n  ",length(to_peak)," of ",length(relat[,1])," candidate linkages accepted.","\n",sep=""));
 	########################################################################################
 	# generate output ######################################################################
 	cat("(3) Create output ...");
@@ -272,13 +291,13 @@ pattern.search2<-function(
 		};
 		if(getit6[i]!="0"){getit6[i]<-substr(getit6[i],3,nchar(getit6[i]))};
 	}
-	grouped_peaks<-data.frame(peaklist,ID,getit5,getit6,getit1,getit2,getit3,getit4)
+	grouped_peaks<-data.frame(peaklist,ID,getit5,getit6,getit1,getit2,getit3,getit4,stringsAsFactors=FALSE)
     names(grouped_peaks)<-c(names(peaklist),"peak ID","group ID","interaction level","to ID",
 		"isotope(s)","mass tolerance","charge level")
 	pattern[[1]]<-grouped_peaks
 	# (2) Parameters #######################################################################
 	parameters<-data.frame(-rttol,rttol,mztol,0,ppm,inttol,0,0,adductmass_LB,adductmass_UB,
-		size_deltamass,size_mass,size_intens)
+		size_deltamass,size_mass,size_intens,stringsAsFactors=FALSE)
 	names(parameters)<-c("rttol","rttol","mztol","mzfrac","ppm","inttol","cutint",
 		"deter","adductmass_LB","adductmass_UB","size_deltamass","size_mass","size_intens")
 	pattern[[2]]<-parameters
@@ -312,14 +331,14 @@ pattern.search2<-function(
 	for(i in 1:length(groupID)){
 		groupID[i]<-paste("/",as.character(groupID[i]),"/",sep="")
 	}
-	grouping<-data.frame(groupID,peakIDs,charge_group)
+	grouping<-data.frame(groupID,peakIDs,charge_group,stringsAsFactors=FALSE)
 	names(grouping)<-c("group ID","peak IDs","charge")
 	pattern[[3]]<-grouping
 	########################################################################################
 	# (4) Atom counts ######################################################################
 	pattern[[4]]<-"no information"
 	# (5) Count of pattern groups ##########################################################
-	charge_count<-data.frame(charge_count,counted)
+	charge_count<-data.frame(charge_count,counted,stringsAsFactors=FALSE)
 	names(charge_count)<-c("Charge level","Counts")
 	pattern[[5]]<-charge_count
 	# (6) Removal by rules #################################################################
@@ -367,7 +386,7 @@ pattern.search2<-function(
 				group_count[isos==get1[j,1] & chrgs==get1[j,2]]<-(group_count[isos==get1[j,1] & chrgs==get1[j,2]]+1)
 			}
 		}
-		counts<-data.frame(isos,chrgs,incr_count,group_count,element)
+		counts<-data.frame(isos,chrgs,incr_count,group_count,element,stringsAsFactors=FALSE)
 		names(counts)<-c("isotope","charge","peak counts","group counts","element")	
 		counts<-counts[(counts[,3]!=0 | counts[,4]!=0),]
 		pattern[[9]]<-counts
@@ -387,7 +406,7 @@ pattern.search2<-function(
 	"Removals by rules","Number of peaks with pattern group overlapping",
 	"Number of peaks per within-group interaction levels",
 	"Counts of isotopes","Elements","Charges","Rule settings");
-	cat(" done.\n");
+	cat(paste(" queries: ",retr_1," - done.\n",sep=""));
 	return(pattern);
 	########################################################################################
 

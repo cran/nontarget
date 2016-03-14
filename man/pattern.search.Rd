@@ -68,7 +68,7 @@ In addition, groups with m/z isotope differences being detected within "small" \
 \code{rules[1]}: Intensities between two peaks associated via any of the candidate m/z isotope differences of the \code{iso} argument are compared. 
 Given this difference in intensity, the minimum number of atoms for the element with highest abundance in argument \code{iso} is calculated. 
 If \eqn{(minimum number of atoms)*(minimum mass) > (m/z of lighter peak * maximum charge in argument iso)}, the candidate m/z difference is 
-found implausible and therefore rejected. The minimum mass is set to that of protium (1H) plus its minimum association to numers of 
+found implausible and therefore rejected. The minimum mass is set to that of protium (1H) plus its minimum association to numbers of 
 carbon atoms, i.e. 1.0078 + (1/6 * 12.0000). Fast precheck to \code{rules[2]} and \code{rules[3]}.
 
 \code{rules[2]}: Repeats \code{rules[1]}, but uses abundances and minimum masses (including the C-ratios of \code{\link[enviPat]{isotopes}}) for only those isotope(s) of argument \code{iso} 
@@ -108,8 +108,8 @@ group of z=y.
 
 \note{
 Peak IDs refer to the order in which peaks are provided. 
-In turn, different group IDs exist for adduct groups, isotope pattern groups and homologue series peak groups. 
-Moreover, and at the highest level, yet other IDs exist for the individual components (see note section of \code{\link[nontarget]{combine}}).
+Different IDs exist for adduct groups, isotope pattern groups, grouped homologue series (HS) peaks 
+and homologue series cluster. Moreover, and at the highest level, yet other IDs exist for the individual components (see note section of \code{\link[nontarget]{combine}}).
 
 Depending on values of \code{mztol}, several m/z isotope differences from argument \code{iso} may match a measured m/z difference between two peaks.
 

@@ -76,8 +76,8 @@ function(
                 if(getrid==TRUE){done[getit1]<-FALSE}
               }
               if( length(dm1)>=4 & length(dm2)>=4 ){
-                  s1<-smooth.spline(data.frame(x=c(dm1),y=c(dI1)),spar=spar);
-                  s2<-smooth.spline(data.frame(x=c(dm2),y=c(dI2)),spar=spar);
+                  s1<-stats::smooth.spline(data.frame(x=c(dm1),y=c(dI1)),spar=spar);
+                  s2<-stats::smooth.spline(data.frame(x=c(dm2),y=c(dI2)),spar=spar);
                   i1<-max(dm1[1],dm2[1])
                   i2<-min(dm1[length(dm1)],dm2[length(dm2)])
                   these<-seq(i1,i2,(i2-i1)/20);
@@ -123,9 +123,9 @@ function(
     }
     cat(paste("Fraction of peaklist removed: ",round(length(done[done==FALSE])/length(done),digits=3),"\n",sep=""));
     that<-data.frame(peaklist,done)
-    names(that)<-c("mass","intensity","rt","not satellite?" )
+    names(that)<-c("mass","intensity","rt","not satellite?")
 	############################################################################
-    return(data.frame(peaklist,done))
+    return(that)
 }
 
 

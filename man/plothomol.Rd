@@ -9,7 +9,7 @@ Herein, homologue series receive a color code based on the mean m/z differences 
 are rounded up to the second digit.
 }
 \usage{
-plothomol(homol, xlim = FALSE, ylim = FALSE,plotlegend=TRUE)
+plothomol(homol, xlim = FALSE, ylim = FALSE,plotlegend=TRUE,plotdefect=FALSE)
 }
 
 \arguments{
@@ -25,7 +25,9 @@ plothomol(homol, xlim = FALSE, ylim = FALSE,plotlegend=TRUE)
   \item{plotlegend}{
 	Should a listing of m/z differences within homologue series and the concommittant color codes been added to the plot? If not, set to FALSE.
 	}
-	
+   \item{plotdefect}{
+	Plot the mass defect instead of the m/z value.
+	}
 }
 \author{
 Martin Loos
@@ -39,23 +41,25 @@ Martin Loos
 data(peaklist);
 data(isotopes)
 homol<-homol.search(
-		peaklist,
-		isotopes,
-		elements=c("C","H","O"),
-		charge=c(1,2),
-		use_C=TRUE,
-		minmz=5,
-		maxmz=60,
-		minrt=0.5,
-		maxrt=2,
-		ppm=TRUE,
-		mztol=3.5,
-        rttol=0.5,
-		minlength=4,
-		mzfilter=FALSE,
-		vec_size=1E6
+	peaklist,
+	isotopes,	
+	elements=c("C","H","O"),
+	use_C=TRUE,
+	minmz=5,
+	maxmz=120,
+	minrt=2,
+	maxrt=2,
+	ppm=TRUE,
+	mztol=3.5,
+    rttol=0.5,
+	minlength=5,
+	mzfilter=FALSE,
+	vec_size=3E6,
+	spar=.45,
+	R2=.98,
+	plotit=FALSE
 )
-plothomol(homol,xlim=FALSE,ylim=FALSE,plotlegend=FALSE);
+plothomol(homol,xlim=FALSE,ylim=FALSE,plotlegend=FALSE,plotdefect=FALSE);
 }
 }
 

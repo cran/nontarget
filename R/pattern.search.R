@@ -23,6 +23,7 @@ function(
     if(length(rules)<11){stop("wrong parameter setting: number of rules < 8!")}
 	if(!is.data.frame(peaklist)){stop("peaklist must be a data.frame")}
 	if(length(peaklist[1,])>3){stop("peaklist with > 3 columns not allowed")}
+	if(!length(peaklist[,1])>1){stop("peaklist with one entry - doesn`t make sense ...")}
 	if(!is.numeric(peaklist[,1]) || !is.numeric(peaklist[,2]) || !is.numeric(peaklist[,3]) ){stop("peaklist columns not numeric")}
     if(rules[4]==TRUE & any(iso$elements=="C")==FALSE & deter!=TRUE){stop("How is rule #7 supposed to work if carbon is not part of the iso argument? Include carbon or set rules[7] to FALSE.")}
 	############################################################################
@@ -117,20 +118,42 @@ function(
     # generate outputs: ########################################################
     isomat[,4]<-result[10];
     # (1) which isotope? #######################################################
-    for(i in 1:(alls)){for(j in 1:entry){if(result[15][[1]][(i-1)*entry+j]!=0){getit1[i]<-paste(getit1[i],result[15][[1]][(i-1)*entry+j],sep="/")}}};
+    for(i in 1:(alls)){
+		if(any(result[15][[1]][((i-1)*entry+1):((i-1)*entry+entry)]!=0)){
+			getit1[i]<-paste(getit1[i],"/",paste0(result[15][[1]][((i-1)*entry+1):((i-1)*entry+entry)][result[15][[1]][((i-1)*entry+1):((i-1)*entry+entry)]!=0],collapse="/"),sep="")
+		}
+	}
     # (2) from which peak? #####################################################
-    for(i in 1:(alls)){for(j in 1:entry){if(result[16][[1]][(i-1)*entry+j]!=0){getit2[i]<-paste(getit2[i],result[16][[1]][(i-1)*entry+j],sep="/")}}};
+    for(i in 1:(alls)){
+		if(any(result[16][[1]][((i-1)*entry+1):((i-1)*entry+entry)]!=0)){
+			getit2[i]<-paste(getit2[i],"/",paste0(result[16][[1]][((i-1)*entry+1):((i-1)*entry+entry)][result[16][[1]][((i-1)*entry+1):((i-1)*entry+entry)]!=0],collapse="/"),sep="")
+		}
+	}
     # (3) to which peak? #######################################################
-    for(i in 1:(alls)){for(j in 1:entry){if(result[17][[1]][(i-1)*entry+j]!=0){getit4[i]<-paste(getit4[i],result[17][[1]][(i-1)*entry+j],sep="/")}}};
+    for(i in 1:(alls)){
+		if(any(result[17][[1]][((i-1)*entry+1):((i-1)*entry+entry)]!=0)){
+			getit4[i]<-paste(getit4[i],"/",paste0(result[17][[1]][((i-1)*entry+1):((i-1)*entry+entry)][result[17][[1]][((i-1)*entry+1):((i-1)*entry+entry)]!=0],collapse="/"),sep="")
+		}
+	}
     # (4) tolerance: small or large? ###########################################
-    for(i in 1:(alls)){for(j in 1:entry){
-		if(result[18][[1]][(i-1)*entry+j]==1){getit5[i]<-paste(getit5[i],"small",sep="/")};
-		if(result[18][[1]][(i-1)*entry+j]==2){getit5[i]<-paste(getit5[i],"large",sep="/")};
-    }};
+    for(i in 1:(alls)){
+		for(j in 1:entry){
+			if(result[18][[1]][(i-1)*entry+j]==1){
+				getit5[i]<-paste(getit5[i],"small",sep="/")
+			};
+			if(result[18][[1]][(i-1)*entry+j]==2){
+				getit5[i]<-paste(getit5[i],"large",sep="/")
+			};
+		}
+	};
     # (5) charge level: ########################################################
-    for(i in 1:(alls)){for(j in 1:entry){if(result[19][[1]][(i-1)*entry+j]!=0){getit6[i]<-paste(getit6[i],result[19][[1]][(i-1)*entry+j],sep="/")}}};
-    if(result[13][[1]]!=entry){cat("WARNING: entry overflow -> links missing! Decrease mztol? Increasy entry argument?")};
-    rm(result);
+    for(i in 1:(alls)){
+		if(any(result[19][[1]][((i-1)*entry+1):((i-1)*entry+entry)]!=0)){
+			getit6[i]<-paste(getit6[i],"/",paste0(result[19][[1]][((i-1)*entry+1):((i-1)*entry+entry)][result[19][[1]][((i-1)*entry+1):((i-1)*entry+entry)]!=0],collapse="/"),sep="")
+		}
+	}	
+    if(result[13][[1]]!=entry){cat("WARNING: entry overflow -> links missing! Decrease mztol? Increase entry argument?")};
+	rm(result);
     #dyn.unload(paste(.libPaths(),"/nontarget/temp/massCpp.dll",sep=""));
     #data.frame(samples[,1],samples[,3],getit4,getit2,getit1,getit5,getit6);
     cat("done.");
@@ -351,9 +374,8 @@ function(
         that100<-c(as.numeric(strsplit(getit6[i],"/")[[1]][-1]));
         for(j in 1:length(that1)){
           if(isomat[as.numeric(that3[j]),5]==1){ # exclude double-distanced peaks
-            if(
-            ((samples[as.numeric(that1[j]),2]+(inttol*samples[as.numeric(that1[j]),2]))/(samples[i,2]-(inttol*samples[i,2])))<min(isomat[,3])){
-              that2[j]<-FALSE;
+            if(((samples[as.numeric(that1[j]),2]+(inttol*samples[as.numeric(that1[j]),2]))/(samples[i,2]-(inttol*samples[i,2])))<min(isomat[,3])){
+			  that2[j]<-FALSE;
               countrem4<-c(countrem4+1);        
             }
           }
@@ -608,256 +630,274 @@ function(
     # (4) group! ###############################################################
     along<-order(samples[,1],decreasing=FALSE)
     for(z in 1:length(charges)){
-    group1b<-rep("0",alls);      # which group? per charge level! renew per charge level!
-    group2b<-rep("0",alls);      # which interaction level?
-    group5b<-rep("0",alls);      # ... and which charge?
-    i<-c(1);
-    while(i<alls){
-      # correct entry, if peak points at itself! ###############################
-      these1<-c(as.numeric(strsplit(getit4[along[i]],"/")[[1]][-1]));
-      if(any(these1==along[i])){
-          these1<-these1[these1!=along[i]];
-          if(length(these1)==0){
-              getit1[along[i]]<-"none";
-              getit4[along[i]]<-"0";
-              getit5[along[i]]<-"0";
-              getit6[along[i]]<-"0";
-          }else{
-              these1<-strsplit(getit1[along[i]],"/")[[1]][-1];
-              these4<-as.numeric(strsplit(getit4[i],"/")[[1]][-1]);
-              these5<-strsplit(getit5[along[i]],"/")[[1]][-1];
-              these6<-strsplit(getit6[along[i]],"/")[[1]][-1];
-              these1<-these1[these4!=along[i]];
-              these5<-these5[these4!=along[i]];
-              these6<-these6[these4!=along[i]];
-              these4<-these4[these4!=along[i]];
-              getit1[along[i]]<-"none";
-              getit4[along[i]]<-"0";
-              getit5[along[i]]<-"0";
-              getit6[along[i]]<-"0";
-              for(j in 1:length(these1)){getit1[along[i]]<-paste(getit1[along[i]],"/",these1[j],sep="");};
-              for(j in 1:length(these4)){getit4[along[i]]<-paste(getit4[along[i]],"/",these4[j],sep="");};
-              for(j in 1:length(these5)){getit5[along[i]]<-paste(getit5[along[i]],"/",these5[j],sep="");};
-              for(j in 1:length(these6)){getit6[along[i]]<-paste(getit6[along[i]],"/",these6[j],sep="");};
-          };
-      };
-      if(getit4[along[i]]!="0" & group1b[along[i]]==0 & grepl(as.character(charges[z]),getit6[along[i]])){  # group1b: schon als M+X erfasst
-        ########################################################################
-        these1<-c(along[i],as.numeric(strsplit(getit4[along[i]],"/")[[1]][-1]));
-        # these1<-c(i,as.numeric(strsplit(getit4[i],"/")[[1]][-1]));
-        these5<-as.numeric(strsplit(getit6[along[i]],"/")[[1]])[-1];
-        these1<-these1[c(TRUE,these5==charges[z])];
-        these1<-as.numeric(levels(as.factor(these1))); # remove double entries
-        group2b[along[i]]<-c("1/0");
-        group2b[these1[these1!=along[i]]]<-paste("2",group2b[these1[these1!=along[i]]],sep="/");
-        allpeaks<-these1;
-        if(length(these1)>1){newpeaks1<-these1[these1!=along[i]];}else{newpeaks1<-c()};
-        level<-c(3);
-        while(length(newpeaks1)>0){
-          newlevel<-c();
-          newpeaks2<-c();
-          for(m in 1:length(newpeaks1)){
-            these1<-c(as.numeric(strsplit(getit4[newpeaks1[m]],"/")[[1]][-1]));
-            these5<-as.numeric(strsplit(getit6[newpeaks1[m]],"/")[[1]])[-1];
-            these1<-c(these1[these5==charges[z]]);
-            if(length(these1)>0){
-              for(n in 1:length(these1)){
-                if(any(these1[n]==allpeaks)!=TRUE){
-                  newpeaks2<-c(newpeaks2,these1[n]);
-                  newlevel<-c(newlevel,level);
-                }; # if
-              }; # for
-            }; # if
-          };
-          # remove double entries in [newpeaks2, newlevel] #####################
-          if(length(newpeaks2)>1){
-            bad<-c();
-            unt<-length(newpeaks2)
-            for(l in 1:(unt-1)){
-              if( any(  (newpeaks2[l]==newpeaks2[(l+1):unt]) & (newlevel[l]==newlevel[(l+1):unt])  ) ){bad<-c(bad,l)}
-            }
-            if(length(bad)>0){
-              newpeaks2<-newpeaks2[-bad];
-              newlevel<-newlevel[-bad];
-            }
-         }
-         if(length(newpeaks2)>0){
-            for(l in 1:length(newpeaks2)){
-              group2b[newpeaks2[l]]<-paste(newlevel[l],group2b[newpeaks2[l]],sep="/");
-            }
-          }
-          # clean for new round ################################################
-          allpeaks<-c(allpeaks,newpeaks1,newpeaks2);
-          allpeaks<-as.numeric(levels(as.factor(allpeaks)));
-          newpeaks1<-newpeaks2;
-          newpeaks1<-as.numeric(levels(as.factor(newpeaks1)));
-          level<-c(level+1);
-        }; # while
-        these1<-allpeaks;
-        these1<-these1[these1!=0]; # dispensable?
-        ########################################################################
-        # RULE8: calculate feasible mass range -> apply as filter after grouping
-        # shift to these 2, keep these 1 for rules[9]
-        # these2: defines upper bound
-        if(rules[8]=="TRUE"){
-            topint<-samples[along[i],2];
-            topmass<-samples[along[i],1];
-            topcount<-ceiling(topmass/max(isomat[,6]));
-            topput<-c(max(isomat[,2])/charges[z])
-            mpoldnew<-min(1/isomat[,3]);
-            toprep<-c(1)
-            while(topint>0 && topcount>0){ #topint>cutint->what if these[1]<cutint? 
-                topmass<-c(topmass+topput);
-                topint<-c(topint*(1/mpoldnew)*(topcount/toprep));
-                toprep<-c(toprep+1);
-                topcount<-c(topcount-1)
-                };
-            getit<-c(samples[these1,1]<=topmass);
-            if(any(getit==FALSE)){countrem8<-countrem8+1}
-            getit[c(1,2)]<-TRUE;
-            these2<-these1[getit];
-        }else{
-            these2<-these1;
-        };
-        ########################################################################
-        # RULE6 + RULE7: pattern plausibility ##################################
-        plaus<-TRUE; # per se before Rule 6 is evaluated!
-        if(rules[9]=="TRUE"){
-            dat2<-samples[these1,];
-            dat4<-seq(1:length(these1));
-            these4<-these1;
-            dat4<-dat4[order(dat2[,1],decreasing=FALSE)];
-            these4<-these4[order(dat2[,1],decreasing=FALSE)];
-            dat2<-dat2[order(dat2[,1],decreasing=FALSE),];
-            monomass<-dat2[1,1];
-            monointens<-dat2[1,2];
-            this8<-as.numeric(strsplit(getit1[along[i]],"/")[[1]])[-1];                # this isotope in "isomat" ...
-            this8b<-c(strsplit(getit5[along[i]],"/")[[1]])[-1];
-            this8c<-as.numeric(strsplit(getit6[along[i]],"/")[[1]])[-1];
-            this10<-as.numeric(strsplit(getit4[along[i]],"/")[[1]])[-1];               # ... for this daughter peak ID
-            this11<-seq(1:length(this8));
-            this8<-this8[this8b=="small" & this8c==charges[z]];
-            this10<-this10[this8b=="small" & this8c==charges[z]];
-            this11<-this11[this8b=="small" & this8c==charges[z]];
-            this9<-c();                                                         # ... with this entry in peak group "dat2"
-            for(y in 1:length(this10)){
-              this9<-c(this9,dat4[these4==this10[y]])
-              };
-            if(length(this8)>0){
-               if(rules[10]==FALSE){                        # problem: e.g. 37Cl shading 2*13C
-                  if(ppm==TRUE){
-                       mztol2<-c((mztol*dat2[1,1]/1e6));
-                  }else{
-                       mztol2<-mztol;
-                  };
-               }else{
-                  mztol2<-0.5
-               }
-               plaus<-rep(TRUE,length(this8));
-               for(l in 1:length(this8)){ # over all matches found in "isomat"
-                   # get number of atoms per dmass
-                   numb<-floor((dat2[this9[l],2]*(1-inttol))/(monointens*(1+inttol)*isomat[this8[l],3]));
-                   # more such peaks expected?
-                   if(numb>2){
-                      mass3<-c(dat2[1,1]+isomat[this8[l],2]); # start with M not M+1 mass!
-                      int3<-c(dat2[this9[l],2]);
-                      count<-c(2);
-                      while((int3[length(int3)]*(1-inttol))>=(cutint*(1+inttol)) & count<numb){
-                        mass3<-c(mass3,(mass3[length(mass3)]+isomat[this8[l],2]));
-                        int3<-c(int3,int3[length(int3)]*isomat[this8[l],3]*((numb-count+1))/((count)));
-                        count<-c(count+1);
-                        };
-                      if(length(mass3)>1){mass3<-mass3[-length(mass3)];int3<-int3[-length(int3)]};
-                      for(j in 1:length(mass3)){ # do not check intensities - only if masses exist
-                        if(any( dat2[,1]<=(mass3[j]+(mztol2)) & dat2[,1]>=(mass3[j]-(mztol2)) )){      # code can be improved: search at generation level + link!
-                            plaus[l]<-TRUE}else{plaus[l]<-FALSE};
-                      }; # with mztol*3!
-                   }; # if still plausible ...
-               }; # for ...
-           }; # if ...
-       }; # on RULE 6
-       # to have more rules inserted, the following is separated from RULE 6:
-       if(all(plaus)){
-          group1b[these2]<-paste(groupcount,group1b[these2],sep="/");
-          group5b[these2]<-paste(charges[z],group5b[these2],sep="/");
-          # estimate number of atoms! ##########################################
-          these16<-c();
-          if(deter==FALSE){
-          for(b in 1:length(these2)){
-            that1<-c(strsplit(getit4[these2[b]],"/")[[1]][-1]);
-            that3<-c(strsplit(getit1[these2[b]],"/")[[1]][-1]);
-            that15<-c(strsplit(getit5[these2[b]],"/")[[1]][-1]);
-            that100<-c(as.numeric(strsplit(getit6[these2[b]],"/")[[1]][-1]));
-            if(any(that15=="small")){
-              for(d in 1:length(that15)){
-                if(that15[d]=="small" && that100[d]==charges[z]){
-                      count<-floor((samples[as.numeric(that1[d]),2]*(1-inttol))/(samples[as.numeric(these2[b]),2]*(1+inttol)*isomat[as.numeric(that3[d]),3]));
-                      if(count<1){count<-c(1)}; # at least one atom for a peak
-                      these16<-paste(these16,"/",isos[isos[,2]==isomat[as.numeric(that3[d]),1],1],":",count,sep="");
-                }
-              }
-            }
-          } # for b
-          } # deter
-          groupinfo<-c(groupinfo,paste("minimum atom counts: no information",these16,sep=""));
-          group3<-c(group3,groupcount);
-          group6<-c(group6,charges[z]);
-          that16<-c(these2[1]);
-          for(f in 2:length(these2)){that16<-paste(that16,",",these2[f],sep="")}
-          group4<-c(group4,that16);
-          groupcount<-c(groupcount+1);
-          i<-c(i+1);
-       }else{ # if not everything is plausible ...
-          countrem9<-c(countrem9+1);
-          # remove affected links:
-          this11<-this11[plaus==FALSE];       # from rule 6!
-          this8<-this8[plaus==FALSE];         # from rule 6!
-          if(length(this11)==length(strsplit(getit1[along[i]],"/")[[1]][-1])){
-            getit1[along[i]]<-"none";
-            getit4[along[i]]<-"0";
-            getit5[along[i]]<-"0";
-            getit6[along[i]]<-"0";
-            isomat[this8,4]<-isomat[this8,4]-1;
-            group2b[these1]<-"0";
-            i<-c(i+1);
-          }else{
-            getit1a<-strsplit(getit1[along[i]],"/")[[1]][-1][-this11];
-            getit1[along[i]]<-"0";for(y in 1:length(getit1a)){getit1[along[i]]<-paste(getit1[along[i]],"/",getit1a[y],sep="")};
-            getit4a<-strsplit(getit4[along[i]],"/")[[1]][-1][-this11];
-            getit4[along[i]]<-"0";for(y in 1:length(getit4a)){getit4[along[i]]<-paste(getit4[along[i]],"/",getit4a[y],sep="")};
-            getit5a<-strsplit(getit5[along[i]],"/")[[1]][-1][-this11];
-            getit5[along[i]]<-"0";for(y in 1:length(getit5a)){getit5[along[i]]<-paste(getit5[along[i]],"/",getit5a[y],sep="")};
-            getit6a<-strsplit(getit6[along[i]],"/")[[1]][-1][-this11];
-            getit6[along[i]]<-"0";for(y in 1:length(getit6a)){getit6[along[i]]<-paste(getit6[along[i]],"/",getit6a[y],sep="")};
-            isomat[this8,4]<-isomat[this8,4]-1;
-            group2b[these1]<-"0";
-            i<-c(i-1); # still peaks left for grouping? repeat! ################
-          };
-       };
-       #
-      }else{
-        i<-c(i+1)
-      }; # if conditions 1-3
-      ##########################################################################
-    }; # while i
-    ############################################################################
-    # merge results from different charge levels! ##############################
-    for(x in 1:alls){ if(group1b[x]!="0"){
-      group1[x]<-paste(group1[x],group1b[x],sep="/");
-      group1[x]<-sub("/0/","/",group1[x]);
-      group2[x]<-paste(group2[x],group2b[x],sep="/");
-      group2[x]<-sub("/0/","/",group2[x]);
-      group5[x]<-paste(group5[x],group5b[x],sep="/");
-      group5[x]<-sub("/0/","/",group5[x]);
-     }};
-    cat(paste(charges[z],"/",sep=""));
+		group1b<-rep("0",alls);      # which group? per charge level! renew per charge level!
+		group2b<-rep("0",alls);      # which interaction level?
+		group5b<-rep("0",alls);      # ... and which charge?
+		i<-c(1);
+		while(i<alls){
+			# correct entry, if peak points at itself! ###############################
+			these1<-c(as.numeric(strsplit(getit4[along[i]],"/")[[1]][-1]));
+			if(any(these1==along[i])){ # remove any self-reference
+				these1<-these1[these1!=along[i]];
+				if(length(these1)==0){
+					getit1[along[i]]<-"none";
+					getit4[along[i]]<-"0";
+					getit5[along[i]]<-"0";
+					getit6[along[i]]<-"0";
+				}else{
+					these1<-strsplit(getit1[along[i]],"/")[[1]][-1];
+					these4<-as.numeric(strsplit(getit4[i],"/")[[1]][-1]);
+					these5<-strsplit(getit5[along[i]],"/")[[1]][-1];
+					these6<-strsplit(getit6[along[i]],"/")[[1]][-1];
+					these1<-these1[these4!=along[i]];
+					these5<-these5[these4!=along[i]];
+					these6<-these6[these4!=along[i]];
+					these4<-these4[these4!=along[i]];
+					getit1[along[i]]<-"none";
+					getit4[along[i]]<-"0";
+					getit5[along[i]]<-"0";
+					getit6[along[i]]<-"0";
+# collapes by paste, not loop
+					for(j in 1:length(these1)){getit1[along[i]]<-paste(getit1[along[i]],"/",these1[j],sep="");};
+					for(j in 1:length(these4)){getit4[along[i]]<-paste(getit4[along[i]],"/",these4[j],sep="");};
+					for(j in 1:length(these5)){getit5[along[i]]<-paste(getit5[along[i]],"/",these5[j],sep="");};
+					for(j in 1:length(these6)){getit6[along[i]]<-paste(getit6[along[i]],"/",these6[j],sep="");};
+				};
+			};
+			if( (getit4[along[i]]!="0") & (group1b[along[i]]==0) & (grepl(as.character(charges[z]),getit6[along[i]])) ){  # group1b: schon als M+X erfasst
+				########################################################################
+				these1<-c(along[i],as.numeric(strsplit(getit4[along[i]],"/")[[1]][-1]));
+				# these1<-c(i,as.numeric(strsplit(getit4[i],"/")[[1]][-1]));
+				these5<-as.numeric(strsplit(getit6[along[i]],"/")[[1]])[-1];
+				these1<-these1[c(TRUE,these5==charges[z])];
+				these1<-as.numeric(levels(as.factor(these1))); # remove double entries
+				group2b[along[i]]<-c("1/0");
+				group2b[these1[these1!=along[i]]]<-paste("2",group2b[these1[these1!=along[i]]],sep="/");
+				allpeaks<-these1;
+				if(length(these1)>1){
+					newpeaks1<-these1[these1!=along[i]];
+				}else{
+					newpeaks1<-c()
+				};
+				level<-c(3);
+				while(length(newpeaks1)>0){
+					newlevel<-c();
+					newpeaks2<-c();
+					for(m in 1:length(newpeaks1)){
+						these1<-c(as.numeric(strsplit(getit4[newpeaks1[m]],"/")[[1]][-1]));
+						these5<-as.numeric(strsplit(getit6[newpeaks1[m]],"/")[[1]])[-1];
+						these1<-c(these1[these5==charges[z]]);
+						if(length(these1)>0){
+							for(n in 1:length(these1)){
+								if(any(these1[n]==allpeaks)!=TRUE){
+									newpeaks2<-c(newpeaks2,these1[n]);
+									newlevel<-c(newlevel,level);
+								}; # if
+							}; # for
+						}; # if
+					};
+					# remove double entries in [newpeaks2, newlevel] #####################
+					if(length(newpeaks2)>1){
+						bad<-c();
+						unt<-length(newpeaks2)
+						for(l in 1:(unt-1)){
+							if( any(  (newpeaks2[l]==newpeaks2[(l+1):unt]) & (newlevel[l]==newlevel[(l+1):unt])  ) ){bad<-c(bad,l)}
+						}
+						if(length(bad)>0){
+							newpeaks2<-newpeaks2[-bad];
+							newlevel<-newlevel[-bad];
+						}
+					}
+					if(length(newpeaks2)>0){
+						for(l in 1:length(newpeaks2)){
+							group2b[newpeaks2[l]]<-paste(newlevel[l],group2b[newpeaks2[l]],sep="/");
+						}
+					}
+					# clean for new round ################################################
+					allpeaks<-c(allpeaks,newpeaks1,newpeaks2);
+					allpeaks<-as.numeric(levels(as.factor(allpeaks)));
+					newpeaks1<-newpeaks2;
+					newpeaks1<-as.numeric(levels(as.factor(newpeaks1)));
+					level<-c(level+1);
+				}; # while
+				these1<-allpeaks;
+				these1<-these1[these1!=0]; # dispensable?
+				########################################################################
+				# RULE8: calculate feasible mass range -> apply as filter after grouping
+				# shift to these 2, keep these 1 for rules[9]
+				# these2: defines upper bound
+				if(rules[8]=="TRUE"){
+					topint<-samples[along[i],2];
+					topmass<-samples[along[i],1];
+					topcount<-ceiling(topmass/max(isomat[,6]));
+					topput<-c(max(isomat[,2])/charges[z])
+					mpoldnew<-min(1/isomat[,3]);
+					toprep<-c(1)
+					while(topint>0 && topcount>0){ #topint>cutint->what if these[1]<cutint? 
+						topmass<-c(topmass+topput);
+						topint<-c(topint*(1/mpoldnew)*(topcount/toprep));
+						toprep<-c(toprep+1);
+						topcount<-c(topcount-1)
+					};
+					getit<-c(samples[these1,1]<=topmass);
+					if(any(getit==FALSE)){countrem8<-countrem8+1}
+					getit[c(1,2)]<-TRUE;
+					these2<-these1[getit];
+				}else{
+					these2<-these1;
+				};
+				########################################################################
+				# RULE6 + RULE7: pattern plausibility ##################################
+				plaus<-TRUE; # per se before Rule 6 is evaluated!
+				if(rules[9]=="TRUE"){
+					dat2<-samples[these1,];
+					dat4<-seq(1:length(these1));
+					these4<-these1;
+					dat4<-dat4[order(dat2[,1],decreasing=FALSE)];
+					these4<-these4[order(dat2[,1],decreasing=FALSE)];
+					dat2<-dat2[order(dat2[,1],decreasing=FALSE),];
+					monomass<-dat2[1,1];
+					monointens<-dat2[1,2];
+					this8<-as.numeric(strsplit(getit1[along[i]],"/")[[1]])[-1];                # this isotope in "isomat" ...
+					this8b<-c(strsplit(getit5[along[i]],"/")[[1]])[-1];
+					this8c<-as.numeric(strsplit(getit6[along[i]],"/")[[1]])[-1];
+					this10<-as.numeric(strsplit(getit4[along[i]],"/")[[1]])[-1];               # ... for this daughter peak ID
+					this11<-seq(1:length(this8));
+					this8<-this8[this8b=="small" & this8c==charges[z]];
+					this10<-this10[this8b=="small" & this8c==charges[z]];
+					this11<-this11[this8b=="small" & this8c==charges[z]];
+					this9<-c();                                                         # ... with this entry in peak group "dat2"
+					for(y in 1:length(this10)){
+						this9<-c(this9,dat4[these4==this10[y]])
+					};
+					if(length(this8)>0){
+						if(rules[10]==FALSE){                        # problem: e.g. 37Cl shading 2*13C
+							if(ppm==TRUE){
+								mztol2<-c((mztol*dat2[1,1]/1e6));
+							}else{
+								mztol2<-mztol;
+							};
+						}else{
+							mztol2<-0.5
+						}
+						plaus<-rep(TRUE,length(this8));
+						for(l in 1:length(this8)){ # over all matches found in "isomat"
+							# get number of atoms per dmass
+							numb<-floor((dat2[this9[l],2]*(1-inttol))/(monointens*(1+inttol)*isomat[this8[l],3]));
+							# more such peaks expected?
+							if(numb>2){
+								mass3<-c(dat2[1,1]+isomat[this8[l],2]); # start with M not M+1 mass!
+								int3<-c(dat2[this9[l],2]);
+								count<-c(2);
+								while((int3[length(int3)]*(1-inttol))>=(cutint*(1+inttol)) & count<numb){
+									mass3<-c(mass3,(mass3[length(mass3)]+isomat[this8[l],2]));
+									int3<-c(int3,int3[length(int3)]*isomat[this8[l],3]*((numb-count+1))/((count)));
+									count<-c(count+1);
+								};
+								if(length(mass3)>1){
+									mass3<-mass3[-length(mass3)];
+									int3<-int3[-length(int3)]
+								};
+								for(j in 1:length(mass3)){ # do not check intensities - only if masses exist
+									if(any( dat2[,1]<=(mass3[j]+(mztol2)) & dat2[,1]>=(mass3[j]-(mztol2)) )){      # code can be improved: search at generation level + link!
+										plaus[l]<-TRUE
+									}else{
+										plaus[l]<-FALSE
+									};
+								}; # with mztol*3!
+							}; # if still plausible ...
+						}; # for ...
+					}; # if ...
+				}; # on RULE 6
+				# to have more rules inserted, the following is separated from RULE 6:
+				if(all(plaus)){
+					group1b[these2]<-paste(groupcount,group1b[these2],sep="/");
+					group5b[these2]<-paste(charges[z],group5b[these2],sep="/");
+					# estimate number of atoms! ##########################################
+					these16<-c();
+					if(deter==FALSE){
+						for(b in 1:length(these2)){
+							that1<-c(strsplit(getit4[these2[b]],"/")[[1]][-1]);
+							that3<-c(strsplit(getit1[these2[b]],"/")[[1]][-1]);
+							that15<-c(strsplit(getit5[these2[b]],"/")[[1]][-1]);
+							that100<-c(as.numeric(strsplit(getit6[these2[b]],"/")[[1]][-1]));
+							if(any(that15=="small")){
+								for(d in 1:length(that15)){
+									if(that15[d]=="small" && that100[d]==charges[z]){
+										count<-floor((samples[as.numeric(that1[d]),2]*(1-inttol))/(samples[as.numeric(these2[b]),2]*(1+inttol)*isomat[as.numeric(that3[d]),3]));
+										if(count<1){
+											count<-c(1)
+										}; # at least one atom for a peak
+										these16<-paste(these16,"/",isos[isos[,2]==isomat[as.numeric(that3[d]),1],1],":",count,sep="");
+									}
+								}
+							}
+						} # for b
+					} # deter
+					groupinfo<-c(groupinfo,paste("minimum atom counts: no information",these16,sep=""));
+					group3<-c(group3,groupcount);
+					group6<-c(group6,charges[z]);
+					that16<-c(these2[1]);
+					for(f in 2:length(these2)){
+						that16<-paste(that16,",",these2[f],sep="")
+					}
+					group4<-c(group4,that16);
+					groupcount<-c(groupcount+1);
+					i<-c(i+1);				
+				}else{ # if not everything is plausible ...
+					countrem9<-c(countrem9+1);
+					# remove affected links:
+					this11<-this11[plaus==FALSE];       # from rule 6!
+					this8<-this8[plaus==FALSE];         # from rule 6!
+					if(length(this11)==length(strsplit(getit1[along[i]],"/")[[1]][-1])){
+						getit1[along[i]]<-"none";
+						getit4[along[i]]<-"0";
+						getit5[along[i]]<-"0";
+						getit6[along[i]]<-"0";
+						isomat[this8,4]<-isomat[this8,4]-1;
+						group2b[these1]<-"0";
+						i<-c(i+1);
+					}else{
+						getit1a<-strsplit(getit1[along[i]],"/")[[1]][-1][-this11];
+						getit1[along[i]]<-"0";for(y in 1:length(getit1a)){getit1[along[i]]<-paste(getit1[along[i]],"/",getit1a[y],sep="")};
+						getit4a<-strsplit(getit4[along[i]],"/")[[1]][-1][-this11];
+						getit4[along[i]]<-"0";for(y in 1:length(getit4a)){getit4[along[i]]<-paste(getit4[along[i]],"/",getit4a[y],sep="")};
+						getit5a<-strsplit(getit5[along[i]],"/")[[1]][-1][-this11];
+						getit5[along[i]]<-"0";for(y in 1:length(getit5a)){getit5[along[i]]<-paste(getit5[along[i]],"/",getit5a[y],sep="")};
+						getit6a<-strsplit(getit6[along[i]],"/")[[1]][-1][-this11];
+						getit6[along[i]]<-"0";for(y in 1:length(getit6a)){getit6[along[i]]<-paste(getit6[along[i]],"/",getit6a[y],sep="")};
+						isomat[this8,4]<-isomat[this8,4]-1;
+						group2b[these1]<-"0";
+						if(i>1){ i<-c(i-1);} # still peaks left for grouping? reset to previous peak. 
+					};
+				};
+			}else{
+				i<-c(i+1)
+			}; # if conditions 1-3
+			##########################################################################
+		}; # while i
+		############################################################################
+		# merge results from different charge levels! ##############################
+		for(x in 1:alls){ 
+			if(group1b[x]!="0"){
+				group1[x]<-paste(group1[x],group1b[x],sep="/");
+				group1[x]<-sub("/0/","/",group1[x]);
+				group2[x]<-paste(group2[x],group2b[x],sep="/");
+				group2[x]<-sub("/0/","/",group2[x]);
+				group5[x]<-paste(group5[x],group5b[x],sep="/");
+				group5[x]<-sub("/0/","/",group5[x]);
+			}
+		};
+		cat(paste(charges[z],"/",sep=""));
     } # for z = charge level ###################################################
     ############################################################################
-    for(x in 1:alls){ if(group1[x]!="0"){
-        group1[x]<-substr(group1[x],1,nchar(group1[x])-2)
-        group2[x]<-substr(group2[x],1,nchar(group2[x])-2)
-        group5[x]<-substr(group5[x],1,nchar(group5[x])-2)
-    }};
+    for(x in 1:alls){ 
+		if(group1[x]!="0"){
+			group1[x]<-substr(group1[x],1,nchar(group1[x])-2)
+			group2[x]<-substr(group2[x],1,nchar(group2[x])-2)
+			group5[x]<-substr(group5[x],1,nchar(group5[x])-2)
+		}
+	};
     #data.frame(group1,group2,group5);
     ############################################################################
     ############################################################################
@@ -974,7 +1014,7 @@ function(
         deep<-"No groups formed"
     }
     ############################################################################
-    hits<-data.frame(isomat[,c(1,7,4)],rep(0,length(isomat[,1])),rep("0",length(isomat[,1])));
+    hits<-data.frame(isomat[,c(1,7,4)],rep(0,length(isomat[,1])),rep("0",length(isomat[,1])),stringsAsFactors=FALSE);
     names(hits)<-c("isotope","charge","peak counts","group counts","element");
     # increment counts
     for(j in 1:length(getit1)){
@@ -1016,7 +1056,7 @@ function(
       }
     }
     ############################################################################
-    removals<-data.frame(seq(1:length(rules)),rep(0,length(rules)));
+    removals<-data.frame(seq(1:length(rules)),rep(0,length(rules)),stringsAsFactors=FALSE);
     names(removals)=c("Rule","Counts");
     removals[1,2]=countrem1;
     removals[2,2]=countrem2;
@@ -1068,7 +1108,7 @@ function(
       groupinfo<-"No groups detected"
     }
     ############################################################################
-    groupcount<-data.frame(charges,rep(0,length(charges)));
+    groupcount<-data.frame(charges,rep(0,length(charges)),stringsAsFactors=FALSE);
     names(groupcount)<-c("Charge level","Counts");
     that2<-seq(1:length(charges));
     if(length(group6)>0){
@@ -1082,11 +1122,11 @@ function(
       groupcount<-"No groups detected"
     }
     ############################################################################
-    grouped_samples<-data.frame(samples,ID,group1,group2,getit4,getit1,getit5,getit6);
+    grouped_samples<-data.frame(samples,ID,group1,group2,getit4,getit1,getit5,getit6,stringsAsFactors=FALSE);
     grouped_samples<-grouped_samples[order(ID,decreasing=FALSE),]
 	names(grouped_samples)<-c(names(samples),"peak ID","group ID","interaction level","to ID","isotope(s)","mass tolerance","charge level")
     #
-    parameters<-data.frame(rttol[1],rttol[2],mztol,mzfrac,ppm,inttol,cutint,deter)
+    parameters<-data.frame(rttol[1],rttol[2],mztol,mzfrac,ppm,inttol,cutint,deter,stringsAsFactors=FALSE)
 	#
     if(length(group4)>0){
 		for(k in 1:length(group3)){
