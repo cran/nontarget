@@ -15,21 +15,7 @@ function(
     # warning(2): adduct ranks ok? #############################################
     # warning(3): any interferring peaks? ######################################
     ############################################################################
-    # (0.1) define parameters & check ##########################################
-    cat("\n (1) Assemble lists...");
-    comp1a<-c();    # = ID of pattern group 
-    comp1b<-c();    # = IDs of peaks in main pattern group
-    comp2a<-c();    # = ID of adduct group(s)
-    comp2b<-c();    # = IDs of peaks in adduct group
-    comp2c<-c();    # = main adduct, i.e. that of comp1b
-    comp2d<-c();    # = other adducts, i.e. those of comp2b
-    comp3<-c();     # = ID of homologue serie(s) 
-    comp4<-c();     # = IDs of interfering peaks
-    comp5<-c();     # = IDs of interfering pattern groups
-    comp6<-c();     # = IDs of interfering adduct groups
-    comp7<-c();     # = consistent? -> ok/(1,2,3,4,5,6)
-    comp8<-c();     # = isotope relations
-    comp9<-c();     # = charge levels
+    # (0.1) checks #############################################################
     if(length(pattern)>1 & length(adduct)>1){
 		if(length(pattern[[1]][,1])!=length(adduct[[1]][,1])){stop(("Different data sets pattern<->adduct used for combining!"))}
 		if(any(all(pattern[[1]][,1]==adduct[[1]][,1])!=TRUE)){stop("Different data sets pattern<->adduct used for combining!")};
@@ -92,6 +78,20 @@ function(
 
     ##########################################################################
     # combine # 1 ############################################################
+    cat("\n (1) Assemble lists...");
+    comp1a<-c();    # = ID of pattern group 
+    comp1b<-c();    # = IDs of peaks in main pattern group
+    comp2a<-c();    # = ID of adduct group(s)
+    comp2b<-c();    # = IDs of peaks in adduct group
+    comp2c<-c();    # = main adduct, i.e. that of comp1b
+    comp2d<-c();    # = other adducts, i.e. those of comp2b
+    comp3<-c();     # = ID of homologue serie(s) 
+    comp4<-c();     # = IDs of interfering peaks
+    comp5<-c();     # = IDs of interfering pattern groups
+    comp6<-c();     # = IDs of interfering adduct groups
+    comp7<-c();     # = consistent? -> ok/(1,2,3,4,5,6)
+    comp8<-c();     # = isotope relations
+    comp9<-c();     # = charge levels
     cat("\n (2) Combine...");
     if(length(pattern[[1]])>1){
 		no3<-rep(TRUE,length(pattern[[1]][,1]));
@@ -110,34 +110,43 @@ function(
 		}
     }
     ##########################################################################
-    for(i in 1:length(intord)){ 
-    if(no3[intord[i]]!=FALSE){ # if not yet included in some group ###########
+    for(i in 1:length(intord)){ # alond decreasing intensity #################	
+		if(no3[intord[i]]==FALSE){next} # if not yet included in some group ##
         ######################################################################
-        comp7<-c(comp7,"-");
+        comp7<-c(comp7,"-"); # initialized as consistent 
         ######################################################################
         # on isotope pattern #################################################
         ######################################################################
         if(length(pattern[[1]])>1){ # if available ...
-            if(pattern[[1]][intord[i],5]!="0"){
+            if(pattern[[1]][intord[i],"group ID"]!="0"){
                 allpeaks<-c(intord[i]);
-                get1<-as.numeric(strsplit(as.character(pattern[[1]][allpeaks,5]),"/")[[1]]);
-                get2<-c()
-                get2a<-as.numeric(strsplit(as.character(pattern[[3]][grepl(paste("/",get1[1],"/",sep=""),
-                as.character(pattern[[3]][,1]),fixed=TRUE),2]),",")[[1]]);
-                get2<-c(get2,get2a);
-                comp1a<-c(comp1a,as.character(pattern[[1]][allpeaks,5]));       # = ID of pattern group 
-                compit<-as.character(get2[1]);
-                for(m in 2:length(get2)){compit<-paste(compit,",",get2[m],sep="")};
+                get1<-as.numeric(strsplit(as.character(pattern[[1]][allpeaks,"group ID"]),"/")[[1]]); # group ID(s) of main peak
+				# get1: if several groups, the first one should be the nesting group at highest charge	
+				where<-unique(unlist(
+					lapply(get1,function(x) which(grepl(paste("/",x,"/",sep=""),as.character(pattern[[3]][,1]),fixed=TRUE)))
+				))	
+				# should be length(where)==1, unless group(s) is nested into several unmergeable groups of higher charge
+				# if so, combine them and issue a warning = 5
+				if(length(where)>1){
+					comp7[length(comp7)]<-paste(comp7[length(comp7)],",5",sep="");#cat("!")
+				}
+				# get all peak IDs from these (possibly nested) group(s) ######
+				get2<-unique(unlist(strsplit(as.character(pattern[[3]][where,"peak IDs"]),",")))
+				# ID of pattern group(s) of this most intense peak ############
+				comp1a<-c(comp1a,as.character(pattern[[1]][allpeaks,"group ID"])); 
+				# IDs of all related peaks #################################### 
+				compit<-paste(get2,collapse=",")
                 comp1b<-c(comp1b,compit);                                       # = IDs of peaks in pattern group
-                allpeaks<-c(allpeaks,get2);
-                allpeaks<-as.numeric(levels(as.factor(allpeaks)));
+                allpeaks<-c(allpeaks,as.numeric(get2));
+                allpeaks<-unique(allpeaks);				
                 no3[allpeaks]<-FALSE;
+				# get isotope relations among peaks ###########################
                 get6<-c()
                 for(k in 1:length(allpeaks)){
                     if(pattern[[1]][allpeaks[k],7]!="0"){
-						get3<-as.numeric(strsplit(as.character(pattern[[1]][allpeaks[k],7]),"/")[[1]]);
-						get4<-strsplit(as.character(pattern[[1]][allpeaks[k],8]),"/")[[1]];
-						get5<-strsplit(as.character(pattern[[1]][allpeaks[k],9]),"/")[[1]];
+						get3<-as.numeric(strsplit(as.character(pattern[[1]][allpeaks[k],"to ID"]),"/")[[1]]);	# to ID
+						get4<-strsplit(as.character(pattern[[1]][allpeaks[k],"isotope(s)"]),"/")[[1]]; 			# isotope(s)
+						get5<-strsplit(as.character(pattern[[1]][allpeaks[k],"mass tolerance"]),"/")[[1]];		# mass tolerance
 						for(y in 1:length(get3)){
 							if(any(allpeaks==get3[y])){
 								get6<-c(get6,paste(get4[y],"(",get5[y],")",sep=""));
@@ -145,18 +154,14 @@ function(
 						}
                     }
                 }
-                if(length(get6)>0){
-					if(length(get6)>1){get6<-as.character(levels(as.factor(get6)))};
-					get7<-get6[1]
-					if(length(get6)>1){
-						for(z in 2:length(get6)){
-							get7<-paste(get7,"/",get6[z],sep="");                                      
-						}
-					}
-                }
-                comp8<-c(comp8,get7);
-                comp9<-c(comp9,as.character(pattern[[3]][grepl(paste("/",get1[1],"/",sep=""),as.character(pattern[[3]][,1]),fixed=TRUE),3]));
-                if(length(strsplit(as.character(pattern[[3]][grepl(paste("/",get1[1],"/",sep=""),as.character(pattern[[3]][,1]),fixed=TRUE),3]),"/")[[1]])>1){
+				get6<-paste(get6,collapse="/")			
+				comp8<-c(comp8,get6);	# comp8 = isotope relations							
+				get7<-unique(unlist(strsplit(as.character(pattern[[3]][where,"charge"]),"/")))
+				get7<-sort(get7,decreasing=TRUE)
+				get7<-paste(get7,collapse="/")
+				comp9<-c(comp9,get7)	# comp9 = charge levels
+				#if(length(comp8)!=length(comp9)){stop("\n debug_A")} 
+				if(length(where)>1){
 					comp7[length(comp7)]<-paste(comp7[length(comp7)],",4",sep="")
                 }      
             }else{
@@ -164,6 +169,7 @@ function(
                 comp1b<-c(comp1b,as.character(intord[i]));   # = IDs of peaks in pattern group
                 comp8<-c(comp8,"-"); # = isotope relations found
                 comp9<-c(comp9,"-"); # = isotope relations found
+				#if(length(comp8)!=length(comp9)){stop("\n debug_B")}
                 allpeaks<-c(intord[i]);
                 no3[intord[i]]<-FALSE;
             }
@@ -172,10 +178,11 @@ function(
             comp1b<-c(comp1b,as.character(intord[i]));   # = IDs of peaks in pattern group
             comp8<-c(comp8,"-"); # = isotope relations found
             comp9<-c(comp9,"-"); # = isotope relations found
+			#if(length(comp8)!=length(comp9)){stop("\n debug_C")}
             allpeaks<-c(intord[i]);
             no3[intord[i]]<-FALSE;
         }
-        ######################################################################
+		######################################################################
         # on adduct pattern ##################################################
         ######################################################################
         if(length(adduct[[1]])>1){ # if available ...
@@ -204,42 +211,20 @@ function(
 				};
             };
             if(length(thesepeaks)>0){
-                thesepeaks<-as.numeric(levels(as.factor(thesepeaks)));
-                addID<-as.numeric(levels(as.factor(addID)));
+                thesepeaks<-unique(thesepeaks);
+                addID<-unique(addID);
                 # store adduct group IDs #######################################
-                compit<-as.character(addID[1]);
-                if(length(addID)>1){
-					for(m in 2:length(addID)){
-						compit<-paste(compit,"/",as.character(addID[m]),sep="");
-					}
-                }
+                compit<-paste(as.character(addID),collapse="/");
                 comp2a<-c(comp2a,compit);   # = ID of adduct group(s)
                 # store adduct peak IDs ########################################
-                compit<-as.character(thesepeaks[1]);
-                if(length(thesepeaks)>1){
-					for(m in 2:length(thesepeaks)){
-						compit<-paste(compit,",",as.character(thesepeaks[m]),sep="");
-					}
-                }
+                compit<-paste(as.character(thesepeaks),collapse=",");
                 comp2b<-c(comp2b,compit);   # = IDs of peaks in adduct group
                 # store adduct from ############################################
-                addfrom<-as.character(levels(as.factor(addfrom)));               
-                compit<-as.character(addfrom[1]);
-                if(length(addfrom)>1){
-					for(m in 2:length(addfrom)){
-						compit<-paste(compit,",",as.character(addfrom[m]),sep="");
-					}
-                }
+				compit<-paste(as.character(unique(addfrom)),collapse=",");
                 comp2c<-c(comp2c,compit);   # = main adduct, i.e. that of comp1b
                 if(length(addfrom)>1){comp7[length(comp7)]<-paste(comp7[length(comp7)],",1",sep="")}
                 # store addut to ###############################################
-                addto<-as.character(levels(as.factor(addto)));
-                compit<-as.character(addto[1]);
-                if(length(addto)>1){
-					for(m in 2:length(addto)){
-						compit<-paste(compit,",",as.character(addto[m]),sep="");
-					}
-                }
+				compit<-paste(as.character(unique(addto)),collapse=",");
                 comp2d<-c(comp2d,compit);   # = other adducts, i.e. those of comp2b
                 ################################################################
                 # check adduct plausbility #####################################
@@ -274,7 +259,7 @@ function(
                 }
                 ################################################################
                 allpeaks<-c(allpeaks,thesepeaks);
-                allpeaks<-as.numeric(levels(as.factor(allpeaks)));
+                allpeaks<-unique(allpeaks);
                 no3[allpeaks]<-FALSE; 
             }else{
                 comp2a<-c(comp2a,"-");   # = ID of adduct group(s)
@@ -290,7 +275,7 @@ function(
         }
         ######################################################################
         # on interfering peaks ###############################################
-        allpeaks<-as.numeric(levels(as.factor(allpeaks)));
+        allpeaks<-unique(allpeaks)
         oldpeaks<-allpeaks;
         if(length(allpeaks)>1){
             IDpeak<-c("");
@@ -347,7 +332,7 @@ function(
 					}
 					##################################################################
 				}		
-				newpeaks2<-as.numeric(as.character(levels(as.factor(newpeaks2))));
+				newpeaks2<-unique(newpeaks2);
 				oldpeaks<-c(oldpeaks,newpeaks2)
 				newpeaks1<-newpeaks2;
 				newpeaks2<-c();
@@ -397,7 +382,6 @@ function(
 			comp3<-c(comp3,"-");    # = ID of homologue serie(s) 
         }
         ######################################################################
-    }
     }
     # data.frame(comp1a,comp1b,comp2a,comp2b,comp3)
     # data.frame(comp1a,comp1b,comp2a,comp2b,comp3,comp4,comp5,comp6,comp7)
@@ -463,7 +447,7 @@ function(
     cat("\n (4) Generate output...");
     # main list ################################################################
     comp7[comp7!="-"]<-substr(comp7[comp7!="-"],3,nchar(comp7[comp7!="-"]))
-    comps<-data.frame(seq(1,length(comp1a),1),comp1a,comp1b,comp2a,comp2b,comp3,comp4,comp5,comp6,comp7,comp2c,comp2d)
+    comps<-data.frame(seq(1,length(comp1a),1),comp1a,comp1b,comp2a,comp2b,comp3,comp4,comp5,comp6,comp7,comp2c,comp2d,stringsAsFactors=FALSE)
     names(comps)<-c("Component ID |","ID pattern group |","ID pattern peaks |","ID adduct group(s) |","ID adduct peaks |",
     "ID homologue series |","ID interfering peaks |","ID interfering pattern group(s) |",
     "ID interfering adduct group(s) |","Warnings |","pattern group adduct|","adduct group adduct(s) |");
@@ -508,7 +492,7 @@ function(
 			this<-c(this,as.numeric(strsplit(as.character(comps[i,7]),",")[[1]]));
 			partin<-c(partin,as.numeric(strsplit(as.character(comps[i,7]),",")[[1]]));
 		}
-		this<-as.numeric(as.character(levels(as.factor(this))));
+		this<-unique(this);
 		numb<-c(numb,length(this));
 		if(length(pattern)>1){
 			int<-c(int,max(pattern[[1]][this,2])[1]);

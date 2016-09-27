@@ -670,7 +670,7 @@ function(
 				# these1<-c(i,as.numeric(strsplit(getit4[i],"/")[[1]][-1]));
 				these5<-as.numeric(strsplit(getit6[along[i]],"/")[[1]])[-1];
 				these1<-these1[c(TRUE,these5==charges[z])];
-				these1<-as.numeric(levels(as.factor(these1))); # remove double entries
+				these1<-as.numeric(unique(these1)); # remove double entries
 				group2b[along[i]]<-c("1/0");
 				group2b[these1[these1!=along[i]]]<-paste("2",group2b[these1[these1!=along[i]]],sep="/");
 				allpeaks<-these1;
@@ -715,9 +715,9 @@ function(
 					}
 					# clean for new round ################################################
 					allpeaks<-c(allpeaks,newpeaks1,newpeaks2);
-					allpeaks<-as.numeric(levels(as.factor(allpeaks)));
+					allpeaks<-as.numeric(unique(allpeaks));
 					newpeaks1<-newpeaks2;
-					newpeaks1<-as.numeric(levels(as.factor(newpeaks1)));
+					newpeaks1<-as.numeric(unique(newpeaks1));
 					level<-c(level+1);
 				}; # while
 				these1<-allpeaks;
@@ -970,20 +970,6 @@ function(
     ############################################################################
 
     ############################################################################
-    # only keep groups of size >=minpeaks ? ####################################
-    #excl<-c()
-    #if(minpeaks!=FALSE & length(group3)>0){
-    #    for(i in 1:length(group4)){
-    #      that<-as.numeric(strsplit(group4[i],",")[[1]])
-    #      if(length(that)<minpeaks){excl<-c(excl,i)}
-    #    }
-    #group3<-group3[-excl];
-    #group4<-group4[-excl];
-    #group6<-group6[-excl];
-    #}
-    ############################################################################
-
-    ############################################################################
     cat("\n (5) Create output... ");
     ############################################################################
     overlap<-rep(0,100);
@@ -996,7 +982,7 @@ function(
     }
     overlap<-overlap[overlap!=0]
     if(length(overlap)>0){
-      this11<-data.frame(seq(1:length(overlap)),overlap)
+      this11<-data.frame(seq(1:length(overlap)),overlap,stringsAsFactors=FALSE)
       names(this11)<-c("Number of groups in overlap","Peak counts")
     }else{
      this11<-"No overlaps detected"
@@ -1008,7 +994,7 @@ function(
     }};
     deep<-deep[deep!=0];
     if(length(deep)>0){
-        deep<-data.frame(seq(1:length(deep)),deep);
+        deep<-data.frame(seq(1:length(deep)),deep,stringsAsFactors=FALSE);
         names(deep)<-c("interaction level","peak counts");
     }else{
         deep<-"No groups formed"
@@ -1043,7 +1029,7 @@ function(
           }
           }
         }
-        hit<-as.numeric(levels(as.factor(hit)))
+        hit<-as.numeric(unique(hit))
         hits[hit,4]<-c( hits[hit,4]+ 1)
       }
       hits<-hits[order((hits[,1]),(hits[,2]),decreasing=FALSE),];
@@ -1142,7 +1128,7 @@ function(
 			}
 			group4[k]<-this31;
 		}
-		grouping<-data.frame(group3,group4,group6);
+		grouping<-data.frame(group3,group4,group6,stringsAsFactors=FALSE);
 		names(grouping)<-c("group ID","peak IDs","charge level");
     }else{
 		grouping<-"no groups assembled"

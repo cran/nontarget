@@ -14,8 +14,8 @@ Includes various plotting and filtering functions for e.g. mass defects, frequen
 \tabular{ll}{
 Package: \tab nontarget\cr
 Type: \tab Package\cr
-Version: \tab 1.8\cr
-Date: \tab 2015-02-09\cr
+Version: \tab 1.9\cr
+Date: \tab 2016-03-21\cr
 License: \tab GPL-3\cr
 }
 Screens a HRMS data set for peaks related by (1) isotopic patterns and/or (2) different adducts of the same molecule and/or (3) being part of 
@@ -151,7 +151,7 @@ homol<-homol.search(
 	use_C=TRUE,
 	minmz=5,
 	maxmz=120,
-	minrt=2,
+	minrt=-1,
 	maxrt=2,
 	ppm=TRUE,
 	mztol=3.5,
